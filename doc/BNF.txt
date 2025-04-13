@@ -72,18 +72,24 @@
            | <identifier>
            | <identifier> ( <expression> )
            | ( <expression> )
-           | <mathfunction> ( <expression> )
+           | <mathfunction> ( <expressionlist> )
+           | <stringfunction> ( <expressionlist> )
+
+<expressionlist> ::= <expression> { , <expression> }
 
 <mathfunction> ::= SIN | COS | TAN 
                  | ATN | ASN | ACS 
                  | COT | SEC | CSC
-                 | LOG | LOG10 | EXP 
-                 | RND | INT
+                 | LOG | LOG10 | CLOG
+                 | EXP | RND | INT
+                 | DEG2RAD | RAD2DEG
+
+<stringfunction> ::= LEFT$ | RIGHT$ | MID$ | LEN$
 
 <addop> ::= + | -
 <mulop> ::= * | /
 
-<identifier> ::= <letter> { <letter> | <digit> }
+<identifier> ::= <letter> { <letter> | <digit> } [ $ ]
 <number> ::= <unsigned-integer> | <unsigned-real>
 <string> ::= " <characters> "
 <letter> ::= A | B | ... | Z
