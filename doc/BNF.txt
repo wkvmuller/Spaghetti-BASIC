@@ -6,6 +6,8 @@
 
 <statement> ::= <letstmt>
               | <matstmt>
+              | <matreadstmt>
+              | <matprintstmt>
               | <printstmt>
               | <inputstmt>
               | <gotostmt>
@@ -113,3 +115,7 @@
             | <identifier> * <number>
             | INV ( <identifier> )
             | TRANS ( <identifier> )
+
+
+<matreadstmt> ::= MAT READ <identifier>
+<matprintstmt> ::= MAT PRINT <identifier>
