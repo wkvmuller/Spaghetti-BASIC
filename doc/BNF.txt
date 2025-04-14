@@ -83,8 +83,9 @@
                  | LOG | LOG10 | CLOG
                  | EXP | RND | INT
                  | DEG2RAD | RAD2DEG
+                 | ASCII | VALUE | TEST$
 
-<stringfunction> ::= LEFT$ | RIGHT$ | MID$ | LEN$
+<stringfunction> ::= LEFT$ | RIGHT$ | MID$ | LEN$ | CHR$ | STRING$
 
 <addop> ::= + | -
 <mulop> ::= * | /
