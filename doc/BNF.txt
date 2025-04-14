@@ -54,7 +54,7 @@
 
 <defstmt> ::= DEF FN <identifier> ( <identifier> ) = <expression>
 
-<dimstmt> ::= DIM <identifier> ( <expression> )
+<dimstmt> ::= DIM <identifier> ( <expressionlist> )
 
 <remstmt> ::= REM <comment>
 
