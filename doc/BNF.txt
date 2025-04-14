@@ -5,11 +5,18 @@
 <linenumber> ::= <unsigned-integer>
 
 <statement> ::= <letstmt>
+              | <matprintfilestmt>
+              | <printfileusingstmt>
               | <matstmt>
               | <matreadstmt>
               | <matprintstmt>
               | <printusingstmt>
               | <formatstmt>
+              | <beepstmt>
+              | <openstmt>
+              | <closestmt>
+              | <printfilestmt>
+              | <inputfilestmt>
               | <printstmt>
               | <inputstmt>
               | <gotostmt>
@@ -125,3 +132,18 @@
 
 <printusingstmt> ::= PRINT USING <linenumber> <printlist>
 <formatstmt> ::= <linenumber> := <string>
+
+
+<beepstmt> ::= BEEP
+
+<openstmt> ::= OPEN <string> FOR <filemode> AS # <unsigned-integer>
+<filemode> ::= INPUT | OUTPUT | APPEND
+
+<closestmt> ::= CLOSE # <unsigned-integer>
+
+<printfilestmt> ::= PRINT # <unsigned-integer> , <printlist>
+<inputfilestmt> ::= INPUT # <unsigned-integer> , <varlist>
+
+
+<matprintfilestmt> ::= MAT PRINT # <unsigned-integer>
+<printfileusingstmt> ::= PRINT # <unsigned-integer> USING <linenumber> <printlist>
