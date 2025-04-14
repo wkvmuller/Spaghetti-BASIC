@@ -32,7 +32,7 @@
 <printlist> ::= <printitem> { , <printitem> }
 <printitem> ::= <expression> | <string>
 
-<inputstmt> ::= INPUT <varlist>
+<inputstmt> ::= INPUT [ <string> ; ] <varlist>
 <varlist> ::= <identifier> { , <identifier> }
 
 <gotostmt> ::= GOTO <linenumber>
