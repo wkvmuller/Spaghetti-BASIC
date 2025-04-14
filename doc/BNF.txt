@@ -8,6 +8,8 @@
               | <matstmt>
               | <matreadstmt>
               | <matprintstmt>
+              | <printusingstmt>
+              | <formatstmt>
               | <printstmt>
               | <inputstmt>
               | <gotostmt>
@@ -119,3 +121,7 @@
 
 <matreadstmt> ::= MAT READ <identifier>
 <matprintstmt> ::= MAT PRINT <identifier>
+
+
+<printusingstmt> ::= PRINT USING <linenumber> <printlist>
+<formatstmt> ::= <linenumber> := <string>
