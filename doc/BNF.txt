@@ -5,6 +5,7 @@
 <linenumber> ::= <unsigned-integer>
 
 <statement> ::= <letstmt>
+              | <matstmt>
               | <printstmt>
               | <inputstmt>
               | <gotostmt>
@@ -100,3 +101,15 @@
 <unsigned-real> ::= <unsigned-integer> . <unsigned-integer>
 
 <comment> ::= { any characters except end-of-line }
+
+
+<matstmt> ::= MAT <identifier> = <matexpr>
+
+<matexpr> ::= <identifier>
+            | <identifier> + <identifier>
+            | <identifier> - <identifier>
+            | <identifier> * <identifier>
+            | <number> * <identifier>
+            | <identifier> * <number>
+            | INV ( <identifier> )
+            | TRANS ( <identifier> )
