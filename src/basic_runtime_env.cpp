@@ -62,6 +62,22 @@ void interactiveLoop() {
             std::string filename;
             iss >> filename;
             load(filename);
+
+        } else if (command == "SAVE") {
+            std::string filename;
+            iss >> filename;
+            std::ofstream outfile(filename);
+            if (!outfile) {
+                std::cerr << "ERROR: Cannot open file for writing: " << filename << std::endl;
+            } else {
+                for (const auto& line : memoryList) {
+                    outfile << line << std::endl;
+                }
+                std::cout << "Saved " << memoryList.size() << " lines to " << filename << std::endl;
+            }
+        } else if (command == "NEW") {
+            memoryList.clear();
+            std::cout << "Memory cleared." << std::endl;
         } else if (command == "LIST") {
             int start = 0, end = INT_MAX;
             char comma;
