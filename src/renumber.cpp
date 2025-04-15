@@ -54,6 +54,9 @@ void renumberSource(std::vector<std::string>& lines, int newStart = 10, int delt
             std::string oldStr = std::to_string(oldNum);
             std::string newStr = std::to_string(newNum);
             std::regex goto_rgx("(GOTO|THEN|GOSUB|PRINT USING)\s+" + oldStr + "(?!\d)");
+
+            std::regex print_file_using_rgx("PRINT\s+#\d+\s+USING\s+" + oldStr + "(?!\d)");
+            updated = std::regex_replace(updated, print_file_using_rgx, "PRINT #$1 USING " + newStr);
             std::regex on_rgx("ON\s+[^\n]*\s+(GOTO|GOSUB)\s+([^\n]*)");
 
             updated = std::regex_replace(updated, goto_rgx, "$1 " + newStr);
