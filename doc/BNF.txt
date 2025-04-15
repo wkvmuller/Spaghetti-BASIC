@@ -5,18 +5,6 @@
 <linenumber> ::= <unsigned-integer>
 
 <statement> ::= <letstmt>
-              | <matprintfilestmt>
-              | <printfileusingstmt>
-              | <matstmt>
-              | <matreadstmt>
-              | <matprintstmt>
-              | <printusingstmt>
-              | <formatstmt>
-              | <beepstmt>
-              | <openstmt>
-              | <closestmt>
-              | <printfilestmt>
-              | <inputfilestmt>
               | <printstmt>
               | <inputstmt>
               | <gotostmt>
@@ -34,6 +22,22 @@
               | <gosubstmt>
               | <returnstmt>
               | <onstmt>
+              | <matstmt>
+              | <matreadstmt>
+              | <matprintstmt>
+              | <printusingstmt>
+              | <formatstmt>
+              | <beepstmt>
+              | <openstmt>
+              | <closestmt>
+              | <printfilestmt>
+              | <inputfilestmt>
+              | <matprintfilestmt>
+              | <printfileusingstmt>
+              | <whilestmt>
+              | <wendstmt>
+              | <repeatstmt>
+              | <untilstmt>
 
 <letstmt> ::= LET <identifier> = <expression>
 
@@ -77,6 +81,43 @@
 <onstmt> ::= ON <expression> GOTO <linenumber> { , <linenumber> }
           | ON <expression> GOSUB <linenumber> { , <linenumber> }
 
+<matstmt> ::= MAT <identifier> = <matexpr>
+
+<matexpr> ::= <identifier>
+            | <identifier> + <identifier>
+            | <identifier> - <identifier>
+            | <identifier> * <identifier>
+            | <number> * <identifier>
+            | <identifier> * <number>
+            | INV ( <identifier> )
+            | TRANS ( <identifier> )
+
+<matreadstmt> ::= MAT READ <identifier>
+<matprintstmt> ::= MAT PRINT <identifier>
+
+<printusingstmt> ::= PRINT USING <linenumber> <printlist>
+<formatstmt> ::= <linenumber> := <string>
+
+<beepstmt> ::= BEEP
+
+<openstmt> ::= OPEN <string> FOR <filemode> AS # <unsigned-integer>
+<filemode> ::= INPUT | OUTPUT | APPEND
+
+<closestmt> ::= CLOSE # <unsigned-integer>
+
+<printfilestmt> ::= PRINT # <unsigned-integer> , <printlist>
+<inputfilestmt> ::= INPUT # <unsigned-integer> , <varlist>
+
+<matprintfilestmt> ::= MAT PRINT # <unsigned-integer> , <identifierlist>
+<identifierlist> ::= <identifier> { , <identifier> }
+
+<printfileusingstmt> ::= PRINT # <unsigned-integer> USING <linenumber> <printlist>
+
+<whilestmt> ::= WHILE <expression>
+<wendstmt> ::= WEND
+<repeatstmt> ::= REPEAT
+<untilstmt> ::= UNTIL <expression>
+
 <expression> ::= <term> { <addop> <term> }
 <term> ::= <factor> { <mulop> <factor> }
 <factor> ::= <primary> | - <primary>
@@ -89,13 +130,14 @@
 
 <expressionlist> ::= <expression> { , <expression> }
 
-<mathfunction> ::= SIN | POW | COS | TAN 
+<mathfunction> ::= SIN | COS | TAN 
                  | ATN | ASN | ACS 
                  | COT | SEC | CSC
                  | LOG | LOG10 | CLOG
                  | EXP | RND | INT
                  | DEG2RAD | RAD2DEG
-                 | ASCII | VALUE | TEST$
+                 | ASCII | VALUE | TEST$ | POW
+                 | ROUND | FLOOR | CEIL
 
 <stringfunction> ::= LEFT$ | RIGHT$ | MID$ | LEN$ | CHR$ | STRING$
 
@@ -112,38 +154,3 @@
 <unsigned-real> ::= <unsigned-integer> . <unsigned-integer>
 
 <comment> ::= { any characters except end-of-line }
-
-
-<matstmt> ::= MAT <identifier> = <matexpr>
-
-<matexpr> ::= <identifier>
-            | <identifier> + <identifier>
-            | <identifier> - <identifier>
-            | <identifier> * <identifier>
-            | <number> * <identifier>
-            | <identifier> * <number>
-            | INV ( <identifier> )
-            | TRANS ( <identifier> )
-
-
-<matreadstmt> ::= MAT READ <identifier>
-<matprintstmt> ::= MAT PRINT <identifier>
-
-
-<printusingstmt> ::= PRINT USING <linenumber> <printlist>
-<formatstmt> ::= <linenumber> := <string>
-
-
-<beepstmt> ::= BEEP
-
-<openstmt> ::= OPEN <string> FOR <filemode> AS # <unsigned-integer>
-<filemode> ::= INPUT | OUTPUT | APPEND
-
-<closestmt> ::= CLOSE # <unsigned-integer>
-
-<printfilestmt> ::= PRINT # <unsigned-integer> , <printlist>
-<inputfilestmt> ::= INPUT # <unsigned-integer> , <varlist>
-
-
-<matprintfilestmt> ::= MAT PRINT # <unsigned-integer>
-<printfileusingstmt> ::= PRINT # <unsigned-integer> USING <linenumber> <printlist>
