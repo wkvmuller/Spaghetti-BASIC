@@ -6,6 +6,7 @@
 #include <map>
 #include <climits>
 #include <algorithm>
+#include "renumber.h"
 
 std::vector<std::string> memoryList;
 
@@ -78,6 +79,22 @@ void interactiveLoop() {
         } else if (command == "NEW") {
             memoryList.clear();
             std::cout << "Memory cleared." << std::endl;
+
+        } else if (command == "RENUMBER") {
+            int newStart = 10, delta = 10, oldStart = 0;
+            char comma;
+            if (iss >> newStart) {
+                if (iss >> comma && comma == ',') {
+                    if (iss >> delta) {
+                        if (iss >> comma && comma == ',') {
+                            iss >> oldStart;
+                        }
+                    }
+                }
+            }
+            renumberSource(memoryList, newStart, delta, oldStart);
+            std::cout << "Source renumbered starting at line " << newStart
+                      << " with delta " << delta << " from old line >= " << oldStart << std::endl;
         } else if (command == "LIST") {
             int start = 0, end = INT_MAX;
             char comma;
