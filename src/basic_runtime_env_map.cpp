@@ -5,8 +5,6 @@
 #include <map>
 #include <climits>
 #include <algorithm>
-#include "interpreter.h"
-#include <cstdlib>
 
 std::map<int, std::string> programSource;
 
@@ -72,15 +70,6 @@ void interactiveLoop() {
         } else if (command == "NEW") {
             programSource.clear();
             std::cout << "Memory cleared." << std::endl;
-
-        } else if (command == "RUN") {
-            std::string filename;
-            if (iss >> filename) {
-                programSource.clear();
-                load(filename);
-            }
-            runInterpreter(programSource);
-
         } else if (command == "LIST") {
             int start = 0, end = INT_MAX;
             char comma;
