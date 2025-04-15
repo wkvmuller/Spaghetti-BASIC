@@ -5,6 +5,7 @@
 <linenumber> ::= <unsigned-integer>
 
 <statement> ::= <letstmt>
+              | <seedstmt>
               | <printstmt>
               | <inputstmt>
               | <gotostmt>
@@ -138,8 +139,9 @@
                  | DEG2RAD | RAD2DEG
                  | ASCII | VALUE | TEST$ | POW
                  | ROUND | FLOOR | CEIL
+                 | TIME
 
-<stringfunction> ::= LEFT$ | RIGHT$ | MID$ | LEN$ | CHR$ | STRING$
+<stringfunction> ::= LEFT$ | RIGHT$ | MID$ | LEN$ | CHR$ | STRING$ | TIME$ | DATE$
 
 <addop> ::= + | -
 <mulop> ::= * | /
@@ -154,3 +156,6 @@
 <unsigned-real> ::= <unsigned-integer> . <unsigned-integer>
 
 <comment> ::= { any characters except end-of-line }
+
+
+<seedstmt> ::= SEED <unsigned-integer>
