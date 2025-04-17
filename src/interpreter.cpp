@@ -117,6 +117,7 @@ private:
     }
 
     double evaluateFunction(const std::string& name, const std::vector<double>& args) {
+        if (name == "LOGX") return std::log(args[1]) / std::log(args[0]);
         if (name == "SIN") return std::sin(args[0]);
         if (name == "COS") return std::cos(args[0]);
         if (name == "TAN") return std::tan(args[0]);
