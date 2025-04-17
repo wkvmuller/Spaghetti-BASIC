@@ -7,7 +7,6 @@
 #include <algorithm>
 #include "interpreter.h"
 #include "syntax.h"
-#include <cstdlib>
 
 std::map<int, std::string> programSource;
 
@@ -34,7 +33,9 @@ void load(const std::string& filename) {
 }
 
 void list(int start = 0, int end = INT_MAX) {
-    for (const auto& [linenum, content] : programSource) {
+    for (const auto& entry : programSource) {
+        int linenum = entry.first;
+        const std::string& content = entry.second;
         if (linenum >= start && linenum <= end) {
             std::cout << linenum << " " << content << std::endl;
         }
@@ -73,17 +74,6 @@ void interactiveLoop() {
         } else if (command == "NEW") {
             programSource.clear();
             std::cout << "Memory cleared." << std::endl;
-
-        } else if (command == "RUN") {
-            std::string filename;
-            if (iss >> filename) {
-                programSource.clear();
-                load(filename);
-            }
-            runInterpreter(programSource);
-
-        } else if (command == "SYNTAX") {
-            checkSyntax(programSource);
         } else if (command == "LIST") {
             int start = 0, end = INT_MAX;
             char comma;
@@ -95,6 +85,15 @@ void interactiveLoop() {
                 }
             }
             list(start, end);
+        } else if (command == "RUN") {
+            std::string filename;
+            if (iss >> filename) {
+                programSource.clear();
+                load(filename);
+            }
+            runInterpreter(programSource);
+        } else if (command == "SYNTAX") {
+            checkSyntax(programSource);
         } else {
             std::cout << "Unrecognized command: " << command << std::endl;
         }
