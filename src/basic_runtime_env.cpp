@@ -6,6 +6,7 @@
 #include <climits>
 #include <algorithm>
 #include "interpreter.h"
+#include "syntax.h"
 #include <cstdlib>
 
 std::map<int, std::string> programSource;
@@ -81,6 +82,8 @@ void interactiveLoop() {
             }
             runInterpreter(programSource);
 
+        } else if (command == "SYNTAX") {
+            checkSyntax(programSource);
         } else if (command == "LIST") {
             int start = 0, end = INT_MAX;
             char comma;

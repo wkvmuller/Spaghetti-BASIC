@@ -131,7 +131,7 @@
 
 <expressionlist> ::= <expression> { , <expression> }
 
-<mathfunction> ::= SIN | COS | TAN 
+<mathfunction> ::= SIN | COS | TAN  | SQR
                  | ATN | ASN | ACS 
                  | COT | SEC | CSC
                  | LOG | LOG10 | CLOG
