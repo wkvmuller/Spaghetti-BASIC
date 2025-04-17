@@ -12,7 +12,7 @@ void checkSyntax(const std::map<int, std::string>& programSource) {
 
     std::set<std::string> validMathFunctions = {
         "SIN", "COS", "TAN", "ATN", "ASN", "ACS",
-        "COT", "SEC", "CSC", "LOG", "LOG10", "CLOG",
+        "COT", "SEC", "CSC", "LOG", "LOGX", "LOG10", "CLOG",
         "EXP", "RND", "INT", "DEG2RAD", "RAD2DEG",
         "ASCII", "VALUE", "POW", "ROUND", "FLOOR", "CEIL", "TIME", "SQR"
     };
