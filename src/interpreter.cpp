@@ -161,7 +161,27 @@ void executeFOR(const std::string&) { std::cout << "[FOR stub]\n"; }
 void executeNEXT(const std::string&) { std::cout << "[NEXT stub]\n"; }
 void executeREAD(const std::string&) { std::cout << "[READ stub]\n"; }
 void executeDATA(const std::string&) { std::cout << "[DATA stub]\n"; }
-void executeRESTORE(const std::string&) { std::cout << "[RESTORE stub]\n"; }
+void executeRESTORE(const std::string&) {
+    std::deque<std::string> restored;
+    for (const auto& [line, content] : programSource) {
+        std::string upper = content;
+        for (char& c : upper) c = toupper(c);
+        if (upper.find("DATA ") == 0) {
+            std::string data = content.substr(4);
+            std::stringstream ss(data);
+            std::string token;
+            while (std::getline(ss, token, ',')) {
+                token.erase(0, token.find_first_not_of(" 	"));
+                token.erase(token.find_last_not_of(" 	") + 1);
+                if (!token.empty()) {
+                    restored.push_back(token);
+                }
+            }
+        }
+    }
+    dataPool = restored;
+    std::cout << "DATA pool restored to original state." << std::endl;
+}
 void executeEND(const std::string&) { std::cout << "[END stub]\n"; }
 void executeDEF(const std::string&) { std::cout << "[DEF stub]\n"; }
 void executeDIM(const std::string&) { std::cout << "[DIM stub]\n"; }
