@@ -2,8 +2,8 @@
 #define RENUMBER_H
 
 #include <string>
-#include <vector>
+#include <map>
 
-void renumberSource(std::vector<std::string>& lines, int newStart = 10, int delta = 10, int oldStart = 0);
+void renumberSource(std::map<int, std::string>& program, int newStart = 10, int delta = 10, int oldStart = 0);
 
 #endif // RENUMBER_H
