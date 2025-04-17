@@ -134,7 +134,7 @@
 <mathfunction> ::= SIN | COS | TAN  | SQR
                  | ATN | ASN | ACS 
                  | COT | SEC | CSC
-                 | LOG | LOG10 | CLOG
+                 | LOGX | LOG10 | CLOG
                  | EXP | RND | INT
                  | DEG2RAD | RAD2DEG
                  | ASCII | VALUE | TEST$ | POW
