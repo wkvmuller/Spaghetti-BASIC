@@ -9,6 +9,15 @@
 
 std::map<std::string, double> variables;
 
+struct ArrayInfo {
+    std::vector<int> shape;
+    std::vector<double> data; // for <= 3D
+    std::map<std::vector<int>, double> sparse; // for >= 4D
+};
+
+std::map<std::string, ArrayInfo> arrays;
+
+
 // ========================= Expression Evaluator =========================
 
 class Parser {
@@ -142,51 +151,205 @@ double evaluateExpression(const std::string& expr) {
 
 void executeLET(const std::string& line) {
     std::istringstream iss(line);
-    std::string keyword, var, eq;
-    iss >> keyword >> var >> eq;
+    std::string keyword, target, eq;
+    iss >> keyword >> target >> eq;
     std::string expr;
     std::getline(iss, expr);
-    expr.erase(0, expr.find_first_not_of(" 	"));
-    double value = evaluateExpression(expr);
-    variables[var] = value;
-    std::cout << var << " = " << value << std::endl;
+    expr.erase(0, expr.find_first_not_of(" \t"));
+
+    size_t paren_pos = target.find('(');
+    if (paren_pos != std::string::npos) {
+        std::string var = target.substr(0, paren_pos);
+        std::string subs = target.substr(paren_pos + 1);
+        if (!subs.empty() && subs.back() == ')') subs.pop_back();
+        std::stringstream ss(subs);
+        std::string token;
+        std::vector<int> indices;
+        while (std::getline(ss, token, ',')) {
+            indices.push_back(std::stoi(token));
+        }
+        double value = evaluateExpression(expr);
+        if (arrays.count(var)) {
+            ArrayInfo& arr = arrays[var];
+            if (indices.size() != arr.shape.size()) {
+                std::cerr << "ERROR: Index count mismatch for array " << var << std::endl;
+                return;
+            }
+            if (arr.data.size()) {
+                int flat = 0, stride = 1;
+                for (int i = indices.size() - 1; i >= 0; --i) {
+                    if (indices[i] >= arr.shape[i]) {
+                        std::cerr << "ERROR: Index out of bounds in " << var << std::endl;
+                        return;
+                    }
+                    flat += indices[i] * stride;
+                    stride *= arr.shape[i];
+                }
+                arr.data[flat] = value;
+            } else {
+                arr.sparse[indices] = value;
+            }
+        } else {
+            std::cerr << "ERROR: Undeclared array " << var << std::endl;
+        }
+    } else {
+        double value = evaluateExpression(expr);
+        variables[target] = value;
+        std::cout << target << " = " << value << std::endl;
+    }
 }
 
-// All other stubs
-void executePRINT(const std::string&) { std::cout << "[PRINT stub]\n"; }
-void executeINPUT(const std::string&) { std::cout << "[INPUT stub]\n"; }
+void executePRINT(const std::string& line) {
+    std::string rest = line.substr(5); // after "PRINT"
+    std::stringstream ss(rest);
+    std::string token;
+    bool first = true;
+    while (std::getline(ss, token, ',')) {
+        token.erase(0, token.find_first_not_of(" \t"));
+        token.erase(token.find_last_not_of(" \t") + 1);
+        if (!first) std::cout << " ";
+        if (!token.empty()) {
+            if (token.front() == '\"' && token.back() == '\"') {
+                std::cout << token.substr(1, token.length() - 2);
+            } else {
+                size_t paren = token.find('(');
+                if (paren != std::string::npos && token.back() == ')') {
+                    std::string name = token.substr(0, paren);
+                    std::string index_str = token.substr(paren + 1, token.size() - paren - 2);
+                    std::stringstream idxs(index_str);
+                    std::string n;
+                    std::vector<int> indices;
+                    while (std::getline(idxs, n, ',')) indices.push_back(std::stoi(n));
+                    if (arrays.count(name)) {
+                        ArrayInfo& arr = arrays[name];
+                        if (indices.size() != arr.shape.size()) {
+                            std::cerr << "[?]";
+                        } else if (!arr.data.empty()) {
+                            int flat = 0, stride = 1;
+                            for (int i = indices.size() - 1; i >= 0; --i) {
+                                flat += indices[i] * stride;
+                                stride *= arr.shape[i];
+                            }
+                            std::cout << arr.data[flat];
+                        } else {
+                            std::cout << arr.sparse[indices];
+                        }
+                    } else {
+                        std::cerr << "[ERR]";
+                    }
+                } else {
+                    try {
+                        std::cout << evaluateExpression(token);
+                    } catch (...) {
+                        std::cerr << "[ERR]";
+                    }
+                }
+            }
+            first = false;
+        }
+    }
+    std::cout << std::endl;
+}
+
+void executeINPUT(const std::string& line) {
+    std::string rest = line.substr(5); // after "INPUT"
+    std::stringstream ss(rest);
+    std::string token;
+    std::vector<std::string> variables;
+    bool promptShown = false;
+
+    // Handle optional prompt string
+    if (!rest.empty() && rest[0] == '"') {
+        size_t endQuote = rest.find('"', 1);
+        if (endQuote != std::string::npos) {
+            std::string prompt = rest.substr(1, endQuote - 1);
+            std::cout << prompt << " ";
+            promptShown = true;
+            rest = rest.substr(endQuote + 1);
+            size_t semi = rest.find(';');
+            if (semi != std::string::npos) rest = rest.substr(semi + 1);
+        }
+    }
+
+    ss.clear(); ss.str(rest);
+    while (std::getline(ss, token, ',')) {
+        token.erase(0, token.find_first_not_of(" 	"));
+        token.erase(token.find_last_not_of(" 	") + 1);
+        if (!token.empty()) {
+            variables.push_back(token);
+        }
+    }
+
+    for (const auto& var : variables) {
+        std::cout << var << "? ";
+        std::string input;
+        std::getline(std::cin, input);
+        try {
+            variables[var] = std::stod(input);
+        } catch (...) {
+            std::cerr << "Invalid input. Defaulting " << var << " to 0." << std::endl;
+            variables[var] = 0;
+        }
+    }
+}
 void executeGOTO(const std::string&) { std::cout << "[GOTO stub]\n"; }
 void executeIF(const std::string&) { std::cout << "[IF stub]\n"; }
 void executeFOR(const std::string&) { std::cout << "[FOR stub]\n"; }
 void executeNEXT(const std::string&) { std::cout << "[NEXT stub]\n"; }
 void executeREAD(const std::string&) { std::cout << "[READ stub]\n"; }
 void executeDATA(const std::string&) { std::cout << "[DATA stub]\n"; }
-void executeRESTORE(const std::string&) {
-    std::deque<std::string> restored;
-    for (const auto& [line, content] : programSource) {
-        std::string upper = content;
-        for (char& c : upper) c = toupper(c);
-        if (upper.find("DATA ") == 0) {
-            std::string data = content.substr(4);
-            std::stringstream ss(data);
+void executeRESTORE(const std::string&) { std::cout << "[RESTORE stub]\n"; }
+void executeEND(const std::string&) {
+    std::exit(0);
+}
+void executeDEF(const std::string&) { std::cout << "[DEF stub]\n"; }
+void executeDIM(const std::string& line) {
+    std::string rest = line.substr(3);
+    std::stringstream ss(rest);
+    std::string varname, dims;
+    if (std::getline(ss, varname, '(')) {
+        varname.erase(0, varname.find_first_not_of(" \t"));
+        varname.erase(varname.find_last_not_of(" \t") + 1);
+        if (std::getline(ss, dims, ')')) {
+            std::stringstream dimstream(dims);
             std::string token;
-            while (std::getline(ss, token, ',')) {
-                token.erase(0, token.find_first_not_of(" 	"));
-                token.erase(token.find_last_not_of(" 	") + 1);
-                if (!token.empty()) {
-                    restored.push_back(token);
+            std::vector<int> shape;
+            int total = 1;
+            while (std::getline(dimstream, token, ',')) {
+                token.erase(0, token.find_first_not_of(" \t"));
+                token.erase(token.find_last_not_of(" \t") + 1);
+                try {
+                    int dim = std::stoi(token);
+                    if (dim <= 0) throw std::runtime_error("Zero or negative dimension");
+                    shape.push_back(dim);
+                    total *= dim;
+                } catch (...) {
+                    std::cerr << "ERROR: Invalid dimension value: " << token << std::endl;
+                    return;
                 }
             }
+            if (shape.size() > 15) {
+                std::cerr << "ERROR: Too many dimensions (max 15)." << std::endl;
+                return;
+            }
+
+            ArrayInfo arr;
+            arr.shape = shape;
+            if (total < 10000) {
+                arr.data.resize(total, 0.0);
+                std::cout << "Allocated dense array " << varname << " with " << total << " elements." << std::endl;
+            } else {
+                std::cout << "Using sparse storage for array " << varname << " with " << total << " elements." << std::endl;
+            }
+
+            arrays[varname] = arr;
         }
     }
-    dataPool = restored;
-    std::cout << "DATA pool restored to original state." << std::endl;
 }
-void executeEND(const std::string&) { std::cout << "[END stub]\n"; }
-void executeDEF(const std::string&) { std::cout << "[DEF stub]\n"; }
-void executeDIM(const std::string&) { std::cout << "[DIM stub]\n"; }
 void executeREM(const std::string&) { std::cout << "[REM stub]\n"; }
-void executeSTOP(const std::string&) { std::cout << "[STOP stub]\n"; }
+void executeSTOP(const std::string&) {
+    std::exit(0);
+}
 void executeGOSUB(const std::string&) { std::cout << "[GOSUB stub]\n"; }
 void executeRETURN(const std::string&) { std::cout << "[RETURN stub]\n"; }
 void executeON(const std::string&) { std::cout << "[ON stub]\n"; }
