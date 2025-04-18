@@ -401,7 +401,15 @@ void executeGOSUB(const std::string& line) {
         currentLineNumber = -1;
     }
 }
-void executeRETURN(const std::string&) { std::cout << "[RETURN stub]\n"; }
+void executeRETURN(const std::string&) {
+    if (gosubStack.empty()) {
+        std::cerr << "ERROR: RETURN without GOSUB" << std::endl;
+        currentLineNumber = -1;
+    } else {
+        currentLineNumber = gosubStack.top();
+        gosubStack.pop();
+    }
+}
 void executeON(const std::string&) { std::cout << "[ON stub]\n"; }
 void executeMAT(const std::string&) { std::cout << "[MAT stub]\n"; }
 void executeFORMAT(const std::string&) { std::cout << "[FORMAT stub]\n"; }
