@@ -379,11 +379,28 @@ void executeDIM(const std::string& line) {
         }
     }
 }
-void executeREM(const std::string&) { std::cout << "[REM stub]\n"; }
+void executeREM(const std::string&) { //std::cout << "[REM stub]\n"; }
 void executeSTOP(const std::string&) {
     std::exit(0);
 }
-void executeGOSUB(const std::string&) { std::cout << "[GOSUB stub]\n"; }
+void executeGOSUB(const std::string& line) {
+    if (gosubStack.size() >= 15) {
+        std::cerr << "ERROR: GOSUB stack overflow (max 15 levels)." << std::endl;
+        currentLineNumber = -1;
+        return;
+    }
+    std::istringstream iss(line);
+    std::string cmd;
+    int target;
+    iss >> cmd >> target;
+    if (programSource.count(target)) {
+        gosubStack.push(currentLineNumber);
+        currentLineNumber = target;
+    } else {
+        std::cerr << "ERROR: GOSUB to undefined line " << target << std::endl;
+        currentLineNumber = -1;
+    }
+}
 void executeRETURN(const std::string&) { std::cout << "[RETURN stub]\n"; }
 void executeON(const std::string&) { std::cout << "[ON stub]\n"; }
 void executeMAT(const std::string&) { std::cout << "[MAT stub]\n"; }
