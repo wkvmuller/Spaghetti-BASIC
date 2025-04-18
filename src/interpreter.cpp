@@ -8,6 +8,7 @@
 #include <vector>
 
 std::map<std::string, double> variables;
+std::deque<std::string> dataPool;
 
 struct ArrayInfo {
     std::vector<int> shape;
@@ -155,7 +156,7 @@ void executeLET(const std::string& line) {
     iss >> keyword >> target >> eq;
     std::string expr;
     std::getline(iss, expr);
-    expr.erase(0, expr.find_first_not_of(" \t"));
+    expr.erase(0, expr.find_first_not_of(" 	"));
 
     size_t paren_pos = target.find('(');
     if (paren_pos != std::string::npos) {
@@ -175,7 +176,7 @@ void executeLET(const std::string& line) {
                 std::cerr << "ERROR: Index count mismatch for array " << var << std::endl;
                 return;
             }
-            if (arr.data.size()) {
+            if (!arr.data.empty()) {
                 int flat = 0, stride = 1;
                 for (int i = indices.size() - 1; i >= 0; --i) {
                     if (indices[i] >= arr.shape[i]) {
@@ -199,17 +200,18 @@ void executeLET(const std::string& line) {
     }
 }
 
+
 void executePRINT(const std::string& line) {
     std::string rest = line.substr(5); // after "PRINT"
     std::stringstream ss(rest);
     std::string token;
     bool first = true;
     while (std::getline(ss, token, ',')) {
-        token.erase(0, token.find_first_not_of(" \t"));
-        token.erase(token.find_last_not_of(" \t") + 1);
+        token.erase(0, token.find_first_not_of(" 	"));
+        token.erase(token.find_last_not_of(" 	") + 1);
         if (!first) std::cout << " ";
         if (!token.empty()) {
-            if (token.front() == '\"' && token.back() == '\"') {
+            if (token.front() == '"' && token.back() == '"') {
                 std::cout << token.substr(1, token.length() - 2);
             } else {
                 size_t paren = token.find('(');
@@ -250,6 +252,7 @@ void executePRINT(const std::string& line) {
     }
     std::cout << std::endl;
 }
+
 
 void executeINPUT(const std::string& line) {
     std::string rest = line.substr(5); // after "INPUT"
@@ -296,12 +299,28 @@ void executeGOTO(const std::string&) { std::cout << "[GOTO stub]\n"; }
 void executeIF(const std::string&) { std::cout << "[IF stub]\n"; }
 void executeFOR(const std::string&) { std::cout << "[FOR stub]\n"; }
 void executeNEXT(const std::string&) { std::cout << "[NEXT stub]\n"; }
-void executeREAD(const std::string&) { std::cout << "[READ stub]\n"; }
-void executeDATA(const std::string&) { std::cout << "[DATA stub]\n"; }
-void executeRESTORE(const std::string&) { std::cout << "[RESTORE stub]\n"; }
-void executeEND(const std::string&) {
-    std::exit(0);
+void executeREAD(const std::string& line) {
+    std::istringstream iss(line);
+    std::string cmd, var;
+    iss >> cmd;
+    while (iss >> var) {
+        if (var.back() == ',') var.pop_back();
+        if (dataPool.empty()) {
+            std::cerr << "ERROR: No more DATA values to READ" << std::endl;
+            return;
+        }
+        std::string value = dataPool.front();
+        dataPool.pop_front();
+        try {
+            variables[var] = std::stod(value);
+            std::cout << var << " = " << variables[var] << std::endl;
+        } catch (...) {
+            std::cerr << "ERROR: Invalid DATA value for numeric READ: " << value << std::endl;
+        }
+    }
 }
+
+
 void executeDEF(const std::string&) { std::cout << "[DEF stub]\n"; }
 void executeDIM(const std::string& line) {
     std::string rest = line.substr(3);
