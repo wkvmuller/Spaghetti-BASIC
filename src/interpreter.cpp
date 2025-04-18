@@ -303,7 +303,18 @@ void executeINPUT(const std::string& line) {
         }
     }
 }
-void executeGOTO(const std::string&) { std::cout << "[GOTO stub]\n"; }
+void executeGOTO(const std::string& line) {
+    std::istringstream iss(line);
+    std::string cmd;
+    int target;
+    iss >> cmd >> target;
+    if (programSource.count(target)) {
+        currentLineNumber = target;
+    } else {
+        std::cerr << "ERROR: GOTO to undefined line " << target << std::endl;
+        currentLineNumber = -1;
+    }
+}
 void executeIF(const std::string&) { std::cout << "[IF stub]\n"; }
 void executeFOR(const std::string& line) {
     if (loopStack.size() >= 15) {
@@ -410,7 +421,55 @@ void executeRETURN(const std::string&) {
         gosubStack.pop();
     }
 }
-void executeON(const std::string&) { std::cout << "[ON stub]\n"; }
+void executeON(const std::string& line) {
+    std::istringstream iss(line);
+    std::string cmd, controlExpr, action, remainder;
+    iss >> cmd >> controlExpr >> action;
+    std::getline(iss, remainder);
+    remainder.erase(0, remainder.find_first_not_of(" 	"));
+
+    int index = static_cast<int>(evaluateExpression(controlExpr));
+    std::stringstream targets(remainder);
+    std::string token;
+    std::vector<int> lines;
+    while (std::getline(targets, token, ',')) {
+        token.erase(0, token.find_first_not_of(" 	"));
+        token.erase(token.find_last_not_of(" 	") + 1);
+        try {
+            lines.push_back(std::stoi(token));
+        } catch (...) {
+            std::cerr << "ERROR: Invalid line number in ON " << action << std::endl;
+            return;
+        }
+    }
+
+    if (index < 1 || index > static_cast<int>(lines.size())) {
+        std::cerr << "ERROR: ON " << action << " index out of bounds: " << index << std::endl;
+        return;
+    }
+
+    int targetLine = lines[index - 1];
+    if (!programSource.count(targetLine)) {
+        std::cerr << "ERROR: ON " << action << " target line does not exist: " << targetLine << std::endl;
+        currentLineNumber = -1;
+        return;
+    }
+
+    if (action == "GOTO") {
+        currentLineNumber = targetLine;
+    } else if (action == "GOSUB") {
+        if (gosubStack.size() >= 15) {
+            std::cerr << "ERROR: GOSUB stack overflow in ON GOSUB" << std::endl;
+            currentLineNumber = -1;
+            return;
+        }
+        gosubStack.push(currentLineNumber);
+        currentLineNumber = targetLine;
+    } else {
+        std::cerr << "ERROR: Unknown ON action: " << action << std::endl;
+    }
+}
+
 void executeMAT(const std::string&) { std::cout << "[MAT stub]\n"; }
 void executeFORMAT(const std::string&) { std::cout << "[FORMAT stub]\n"; }
 void executeBEEP(const std::string&) { std::cout << "[BEEP stub]\n"; }
