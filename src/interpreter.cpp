@@ -137,6 +137,33 @@ private:
     }
 
     double evaluateFunction(const std::string& name, const std::vector<double>& args) {
+    if (name == "RND") return static_cast<double>(rand()) / RAND_MAX;
+    if (name == "TIME") return static_cast<double>(time(nullptr));
+    if (name == "TIME$") {
+        time_t now = time(nullptr);
+        char buffer[64];
+        strftime(buffer, sizeof(buffer), "%I:%M:%S %p", localtime(&now));
+        std::cout << buffer;
+        return 0.0;
+    }
+    if (name == "DATE$") {
+        time_t now = time(nullptr);
+        char buffer[64];
+        strftime(buffer, sizeof(buffer), "%Y-%m-%d", localtime(&now));
+        std::cout << buffer;
+        return 0.0;
+    }
+    if (name == "TEST$" || name == "VALID$") {
+        if (args.empty()) return 0.0;
+        std::string str = std::to_string(args[0]);
+        try {
+            std::stod(str);
+            return 1.0;
+        } catch (...) {
+            return 0.0;
+        }
+    }
+
         if (name == "LOGX") return std::log(args[1]) / std::log(args[0]);
         if (name == "SIN") return std::sin(args[0]);
         if (name == "COS") return std::cos(args[0]);
@@ -481,7 +508,14 @@ void executeWHILE(const std::string&) { std::cout << "[WHILE stub]\n"; }
 void executeWEND(const std::string&) { std::cout << "[WEND stub]\n"; }
 void executeREPEAT(const std::string&) { std::cout << "[REPEAT stub]\n"; }
 void executeUNTIL(const std::string&) { std::cout << "[UNTIL stub]\n"; }
-void executeSEED(const std::string&) { std::cout << "[SEED stub]\n"; }
+void executeSEED(const std::string& line) {
+    std::istringstream iss(line);
+    std::string cmd;
+    int seed;
+    iss >> cmd >> seed;
+    srand(seed);
+    std::cout << "Random number generator seeded with " << seed << std::endl;
+}
 
 // ========================= Dispatcher =========================
 
