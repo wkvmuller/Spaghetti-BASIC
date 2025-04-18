@@ -8,7 +8,6 @@
 #include <vector>
 
 std::map<std::string, double> variables;
-std::deque<std::string> dataPool;
 
 struct ArrayInfo {
     std::vector<int> shape;
@@ -17,6 +16,17 @@ struct ArrayInfo {
 };
 
 std::map<std::string, ArrayInfo> arrays;
+
+struct LoopFrame {
+    std::string var;
+    double final;
+    double step;
+    int returnLine;
+};
+
+std::vector<LoopFrame> loopStack;
+
+std::stack<int> gosubStack;
 
 
 // ========================= Expression Evaluator =========================
@@ -156,7 +166,7 @@ void executeLET(const std::string& line) {
     iss >> keyword >> target >> eq;
     std::string expr;
     std::getline(iss, expr);
-    expr.erase(0, expr.find_first_not_of(" 	"));
+    expr.erase(0, expr.find_first_not_of(" \t"));
 
     size_t paren_pos = target.find('(');
     if (paren_pos != std::string::npos) {
@@ -176,7 +186,7 @@ void executeLET(const std::string& line) {
                 std::cerr << "ERROR: Index count mismatch for array " << var << std::endl;
                 return;
             }
-            if (!arr.data.empty()) {
+            if (arr.data.size()) {
                 int flat = 0, stride = 1;
                 for (int i = indices.size() - 1; i >= 0; --i) {
                     if (indices[i] >= arr.shape[i]) {
@@ -200,18 +210,17 @@ void executeLET(const std::string& line) {
     }
 }
 
-
 void executePRINT(const std::string& line) {
     std::string rest = line.substr(5); // after "PRINT"
     std::stringstream ss(rest);
     std::string token;
     bool first = true;
     while (std::getline(ss, token, ',')) {
-        token.erase(0, token.find_first_not_of(" 	"));
-        token.erase(token.find_last_not_of(" 	") + 1);
+        token.erase(0, token.find_first_not_of(" \t"));
+        token.erase(token.find_last_not_of(" \t") + 1);
         if (!first) std::cout << " ";
         if (!token.empty()) {
-            if (token.front() == '"' && token.back() == '"') {
+            if (token.front() == '\"' && token.back() == '\"') {
                 std::cout << token.substr(1, token.length() - 2);
             } else {
                 size_t paren = token.find('(');
@@ -252,7 +261,6 @@ void executePRINT(const std::string& line) {
     }
     std::cout << std::endl;
 }
-
 
 void executeINPUT(const std::string& line) {
     std::string rest = line.substr(5); // after "INPUT"
@@ -297,29 +305,35 @@ void executeINPUT(const std::string& line) {
 }
 void executeGOTO(const std::string&) { std::cout << "[GOTO stub]\n"; }
 void executeIF(const std::string&) { std::cout << "[IF stub]\n"; }
-void executeFOR(const std::string&) { std::cout << "[FOR stub]\n"; }
-void executeNEXT(const std::string&) { std::cout << "[NEXT stub]\n"; }
-void executeREAD(const std::string& line) {
-    std::istringstream iss(line);
-    std::string cmd, var;
-    iss >> cmd;
-    while (iss >> var) {
-        if (var.back() == ',') var.pop_back();
-        if (dataPool.empty()) {
-            std::cerr << "ERROR: No more DATA values to READ" << std::endl;
-            return;
-        }
-        std::string value = dataPool.front();
-        dataPool.pop_front();
-        try {
-            variables[var] = std::stod(value);
-            std::cout << var << " = " << variables[var] << std::endl;
-        } catch (...) {
-            std::cerr << "ERROR: Invalid DATA value for numeric READ: " << value << std::endl;
-        }
+void executeFOR(const std::string& line) {
+    if (loopStack.size() >= 15) {
+        std::cerr << "ERROR: Maximum loop nesting (15) exceeded." << std::endl;
+        currentLineNumber = -1;
+        return;
     }
-}
 
+    std::istringstream iss(line);
+    std::string cmd, var, eq, tokw;
+    double start, final, step = 1;
+    iss >> cmd >> var >> eq >> start >> tokw >> final;
+
+    std::string remaining;
+    std::getline(iss, remaining);
+    size_t step_pos = remaining.find("STEP");
+    if (step_pos != std::string::npos) {
+        std::istringstream sstep(remaining.substr(step_pos + 4));
+        sstep >> step;
+    }
+
+    variables[var] = start;
+
+    LoopFrame frame;
+    frame.var = var;
+    frame.final = final;
+    frame.step = step;
+    frame.returnLine = currentLineNumber;
+    loopStack.push_back(frame);
+}
 
 void executeDEF(const std::string&) { std::cout << "[DEF stub]\n"; }
 void executeDIM(const std::string& line) {
