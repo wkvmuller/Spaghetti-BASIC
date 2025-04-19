@@ -69,33 +69,56 @@ std::vector<LoopFrame> loopStack;
 std::stack<int> gosubStack;
 
 double evaluateFunction(const std::string& name, const std::vector<ArgsInfo>& args) {
+    if (name == "ASCII") {
+        if (!args[0].isstring || args[0].s.empty()) {
+            std::cerr <"Bas string passed to ASCII("<<args[0].s<<")  line:"<<args[0].linenumber << std::endl;
+            return 0.0;
+        }    
+        return static_cast<double>(static_cast<unsigned char>(args[0].s[0]));
+    }
+
 
 if (name == "LEN$") {
-     if(args[0].isstring )
-        std::string s = args[0].s;
-     else {
-           std::cerr <  "bad non string passed to LEN$() on line: "<< args[0].linenumber << std::endl;
+     if(a!rgs[0].isstring )
+           std::cerr <  "bad non string passed to LEN$("<<argc[0].d<<") on line: "<< args[0].linenumber << std::endl;
            return static_cast<double> -1;
-          }
-     return static_cast<double>(s.length());
+      }
+     return static_cast<double>(args[0].s;.length());
    }
 }
-    
-        if (name == "LOGX") return std::log(args[1]) / std::log(args[0]);
-        if (name == "SIN") return std::sin(args[0]);
-        if (name == "COS") return std::cos(args[0]);
-        if (name == "TAN") return std::tan(args[0]);
-        if (name == "SQR") return std::sqrt(args[0]);
-        if (name == "LOG") return std::log(args[0]);
-        if (name == "LOG10" || name == "CLOG") return std::log10(args[0]);
-        if (name == "EXP") return std::exp(args[0]);
-        if (name == "INT") return std::floor(args[0]);
-        if (name == "ROUND") return std::round(args[0]);
-        if (name == "FLOOR") return std::floor(args[0]);
-        if (name == "CEIL") return std::ceil(args[0]);
-        if (name == "POW") return std::pow(args[0], args[1]);
-        throw { std::ceer << "Unknown function: " <<name<<std::endl;
-            return 0;
+
+        if (name == "SIN" || name == "COS" || name == "TAN" || name == "SQR" || name == "LOG" || name == "LOG10" || name == "CLOG") || name == "EXP" || name == "INT" || name == "ROUND" || name == "FLOOR" || name == "CEIL"){
+            if(argv[0].isstreng){
+                std::cerr<<"Error on "<<name<<" passing a string where number expected ["<<args[0].s<<]  line:"<<args[0].linemumber<<std::endl;
+                return 0.0;
+             }   
+        }
+        if (name == "LOGX" || name == "POW") {
+            if (args[0].isstring){  
+                std::cerr<<"String passed [...]  "<<name<<"(["<<args[0].s<<"],"<<args[1].d<<")  line:<<args[0].linenumber<std::endl;
+                return 0.0;      
+            }
+            if (args[1].isstring){  
+                std::cerr<<"String passed [...]  "<<name<<"("<<args[0].d<<",["<<args[1].s<<"])  line:<<args[0].linenumber<std::endl;
+                return 0.0;      
+            }
+        }   
+             
+        if (name == "LOGX") return std::log(args[1].d) / std::log(args[0].d);
+        if (name == "SIN") return std::sin(args[0].d);
+        if (name == "COS") return std::cos(args[0].d);
+        if (name == "TAN") return std::tan(args[0].d);
+        if (name == "SQR") return std::sqrt(args[0].d);
+        if (name == "LOG") return std::log(args[0].d);
+        if (name == "LOG10" || name == "CLOG") return std::log10(args[0]).d;
+        if (name == "EXP") return std::exp(args[0].d);
+        if (name == "INT") return std::floor(args[0].d);
+        if (name == "ROUND") return std::round(args[0].d);
+        if (name == "FLOOR") return std::floor(args[0].d);
+        if (name == "CEIL") return std::ceil(args[0].d);
+        if (name == "POW") return std::pow(args[0].d, args[1]).d;
+        std::ceer << "Unknown function: " <<name<<std::endl;
+            return 0.0;
         }    
 }
 
@@ -112,13 +135,23 @@ std::string evaluateStringFunction(const std::string& name, const std::vector<Ar
         strftime(buffer, sizeof(buffer), "%Y-%m-%d", localtime(&now));
         return buffer;
     }
-if (name == "STRING$") {
-    if (!args[0].isstring) {
-        return std::to_string(args[0].d);
-    } else {
-        return args[0].s;
+    if (name=="STRING$"){
+        if (!args[0].isstring){
+            return static_cast<double> std::to_string(args[0].d);;
+        else
+            return static_cast<double> 0.0;
     }
-}
+
+    if (name == "CHR$") {
+        if ( argc[0].isstring){
+            std::cerr <<"Error - string passed to CHR$("<<argc.s<<") line:" << args[0].linenumber << std::endl;
+            return "";
+        }
+        int c = static_cast<int>(args[0].d);
+        if (c < 0 || c > 255) return "";
+        return std::string(1, static_cast<char>(c));
+    }
+       
     if (name == "LEFT$") {
         if(!args[0].isstring) { 
             std::cerr<<"Passed a number [...](not a string)to LEFT$(["<< args[0].d<<"],"<<args[1].d<<") on line: "<<args[0].linenumber<<std::endl;
@@ -259,7 +292,10 @@ private:
                     } while (peek() == ',' && get());
                 }
                 if (get() != ')') throw std::runtime_error("Expected ')' after function args");
-                return evaluateFunction(name, args);
+                   if (name == "TIME$" || name == "DATE$"|| name=="STRING$" || name == "CHR$" || name == "LEFT$" || name == "RIGHT$" || name == "MID$") 
+                       return evaluateStringFunction(name,args);
+                   else
+                       return evaluateFunction(name, args);
             } else {
                 return variables.count(name) ? variables[name] : 0.0;
             }
