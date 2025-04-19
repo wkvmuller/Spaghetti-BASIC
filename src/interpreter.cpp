@@ -7,7 +7,47 @@
 #include <stdexcept>
 #include <vector>
 
-std::map<std::string, double> variables;
+
+enum VariableType {
+    VT_UNKNOWN, VT_TEXT, VT_INT, VT_DOUBLE, VT_STRING , VT_CONSTANT };
+
+struct VarInfo{
+    VariableType  VT;
+    std::string  s;
+    double d;
+    long long ll;
+}
+     
+std::map<std::string, VarInfo> variables;
+
+VarInfo makeVarInfo(VariableType vt; std::string str = "";double dd=0.0; long long l=0) {
+    VariableType tmp;
+    tmp.VT = vt;
+    tmp.s = str;
+    tmp.d = dd;
+    tmp.ll = l;
+    return tmp;
+}
+
+
+struct ArgsInfo {
+    long long  linenumber;
+    std::string identifiername;
+    boll isstring;
+    std::string s;
+    double d;
+}
+
+ArgsInfo makeArgsInfo(long long line; std::string idname; bool boolstring; std::string str; double d){
+    ArgsInfo tmp;
+    tmp.linenumber = line;
+    tmp.identifiername = idname;
+    tmp.isstring = boolstring;
+    tmp.s = str;
+    tmp.d = d;
+    return tmp;
+}
+
 
 struct ArrayInfo {
     std::vector<int> shape;
@@ -28,6 +68,110 @@ std::vector<LoopFrame> loopStack;
 
 std::stack<int> gosubStack;
 
+double evaluateFunction(const std::string& name, const std::vector<ArgsInfo>& args) {
+
+if (name == "LEN$") {
+     if(args[0].isstring )
+        std::string s = args[0].s;
+     else {
+           std::cerr <  "bad non string passed to LEN$() on line: "<< args[0].linenumber << std::endl;
+           return static_cast<double> -1;
+          }
+     return static_cast<double>(s.length());
+   }
+}
+    
+        if (name == "LOGX") return std::log(args[1]) / std::log(args[0]);
+        if (name == "SIN") return std::sin(args[0]);
+        if (name == "COS") return std::cos(args[0]);
+        if (name == "TAN") return std::tan(args[0]);
+        if (name == "SQR") return std::sqrt(args[0]);
+        if (name == "LOG") return std::log(args[0]);
+        if (name == "LOG10" || name == "CLOG") return std::log10(args[0]);
+        if (name == "EXP") return std::exp(args[0]);
+        if (name == "INT") return std::floor(args[0]);
+        if (name == "ROUND") return std::round(args[0]);
+        if (name == "FLOOR") return std::floor(args[0]);
+        if (name == "CEIL") return std::ceil(args[0]);
+        if (name == "POW") return std::pow(args[0], args[1]);
+        throw { std::ceer << "Unknown function: " <<name<<std::endl;
+            return 0;
+        }    
+}
+
+std::string evaluateStringFunction(const std::string& name, const std::vector<ArgsInfo>& args) {
+    if (name == "TIME$") {
+        time_t now = time(nullptr);
+        char buffer[64];
+        strftime(buffer, sizeof(buffer), "%I:%M:%S %p", localtime(&now));
+        return buffer;
+    }
+    if (name == "DATE$") {
+        time_t now = time(nullptr);
+        char buffer[64];
+        strftime(buffer, sizeof(buffer), "%Y-%m-%d", localtime(&now));
+        return buffer;
+    }
+if (name == "STRING$") {
+    if (!args[0].isstring) {
+        return std::to_string(args[0].d);
+    } else {
+        return args[0].s;
+    }
+}
+    if (name == "LEFT$") {
+        if(!args[0].isstring) { 
+            std::cerr<<"Passed a number [...](not a string)to LEFT$(["<< args[0].d<<"],"<<args[1].d<<") on line: "<<args[0].linenumber<<std::endl;
+            return"";
+         } else if (args[1].isstring){
+            std::cerr<<"Passed a string [...](not a number)to LEFT$("<< args[0].s<<",["<<args[1].s<<"]) on line: "<<args[0].linenumber<<std::endl;
+            return "";
+         }
+         
+        int n = static_cast<int>(args[1].d);
+        if (n < 0) n = 0;
+        if (n > static_cast<int>(args[0].s.length())) n = args[0].s.length();
+        return args[0].s.substr(0, n);
+    }
+    
+    if (name == "RIGHT$") {
+        if(!args[0].isstring) { 
+            std::cerr<<"Passed a number [...](not a string)to RIGHT$(["<< args[0].d<<"],"<<args[1].d<<") on line: "<<args[0].linenumber<<std::endl;
+            return"";
+         } else if (args[1].isstring){
+            std::cerr<<"Passed a string [...](not a number)to RIGHT$("<< args[0].s<<",["<<args[1].s<<"]) on line: "<<args[0].linenumber<<std::endl;
+            return "";
+         }
+
+        int n = static_cast<int>(args[1].d);
+        if (n < 0) n = 0;
+        if (n > static_cast<int>(args[0].s.length())) n = args[0].s.length();
+        return args[0].s.substr(args[0].s.length() - n);
+    }
+    if (name == "MID$") {
+         if(!args[0].isstring) { 
+            std::cerr<<"Passed a number [...](not a string)to MID$(["<< args[0].d<<"],"<<args[1].d<<","<<args[2].d<<") on line: "<<args[0].linenumber<<std::endl;
+            return"";
+         } else if (args[1].isstring){
+            std::cerr<<"Passed a string [...](not a number)to MID$("<< args[0].s<<",["<<args[1].s<"],"<<args[2].d<<") on line: "<<args[0].linenumber<<std::endl;
+            return "";
+         } else if (args[2].isstring){
+            std::cerr<<"Passed a string [...](not a number)to MID$("<< args[0].s<<","<<args[1].d<",["<<args[2].s<<"]) on line: "<<args[0].linenumber<<std::endl;
+            return "";
+         }
+
+        int start = static_cast<int>(args[1].d);
+        int len = static_cast<int>(args[2].d);
+        if (start < 1) start = 1;
+        if (len < 0) len = 0;
+        if (start > static_cast<int>( args[0].s.length())) start =  args[0].s.length();
+        if (start - 1 + len > static_cast<int>( args[0].s.length())) len =  args[0].s.length() - (start - 1);
+        return  args[0].s.substr(start - 1, len);
+    }
+
+    std::cerr << "ERROR: Unknown string function " << name << std::endl;
+    return "";
+}
 
 // ========================= Expression Evaluator =========================
 
@@ -136,50 +280,8 @@ private:
         return std::stod(input.substr(start, pos - start));
     }
 
-    double evaluateFunction(const std::string& name, const std::vector<double>& args) {
-    if (name == "RND") return static_cast<double>(rand()) / RAND_MAX;
-    if (name == "TIME") return static_cast<double>(time(nullptr));
-    if (name == "TIME$") {
-        time_t now = time(nullptr);
-        char buffer[64];
-        strftime(buffer, sizeof(buffer), "%I:%M:%S %p", localtime(&now));
-        std::cout << buffer;
-        return 0.0;
-    }
-    if (name == "DATE$") {
-        time_t now = time(nullptr);
-        char buffer[64];
-        strftime(buffer, sizeof(buffer), "%Y-%m-%d", localtime(&now));
-        std::cout << buffer;
-        return 0.0;
-    }
-    if (name == "TEST$" || name == "VALID$") {
-        if (args.empty()) return 0.0;
-        std::string str = std::to_string(args[0]);
-        try {
-            std::stod(str);
-            return 1.0;
-        } catch (...) {
-            return 0.0;
-        }
-    }
-
-        if (name == "LOGX") return std::log(args[1]) / std::log(args[0]);
-        if (name == "SIN") return std::sin(args[0]);
-        if (name == "COS") return std::cos(args[0]);
-        if (name == "TAN") return std::tan(args[0]);
-        if (name == "SQR") return std::sqrt(args[0]);
-        if (name == "LOG") return std::log(args[0]);
-        if (name == "LOG10" || name == "CLOG") return std::log10(args[0]);
-        if (name == "EXP") return std::exp(args[0]);
-        if (name == "INT") return std::floor(args[0]);
-        if (name == "ROUND") return std::round(args[0]);
-        if (name == "FLOOR") return std::floor(args[0]);
-        if (name == "CEIL") return std::ceil(args[0]);
-        if (name == "POW") return std::pow(args[0], args[1]);
-        throw std::runtime_error("Unknown function: " + name);
-    }
 };
+
 
 double evaluateExpression(const std::string& expr) {
     return Parser(expr).parse();
@@ -233,7 +335,7 @@ void executeLET(const std::string& line) {
     } else {
         double value = evaluateExpression(expr);
         variables[target] = value;
-        std::cout << target << " = " << value << std::endl;
+        return target << " = " << value << std::endl;
     }
 }
 
@@ -245,10 +347,10 @@ void executePRINT(const std::string& line) {
     while (std::getline(ss, token, ',')) {
         token.erase(0, token.find_first_not_of(" \t"));
         token.erase(token.find_last_not_of(" \t") + 1);
-        if (!first) std::cout << " ";
+        if (!first) return " ";
         if (!token.empty()) {
             if (token.front() == '\"' && token.back() == '\"') {
-                std::cout << token.substr(1, token.length() - 2);
+                return token.substr(1, token.length() - 2);
             } else {
                 size_t paren = token.find('(');
                 if (paren != std::string::npos && token.back() == ')') {
@@ -268,16 +370,16 @@ void executePRINT(const std::string& line) {
                                 flat += indices[i] * stride;
                                 stride *= arr.shape[i];
                             }
-                            std::cout << arr.data[flat];
+                            return arr.data[flat];
                         } else {
-                            std::cout << arr.sparse[indices];
+                            return arr.sparse[indices];
                         }
                     } else {
                         std::cerr << "[ERR]";
                     }
                 } else {
                     try {
-                        std::cout << evaluateExpression(token);
+                        return evaluateExpression(token);
                     } catch (...) {
                         std::cerr << "[ERR]";
                     }
@@ -286,7 +388,7 @@ void executePRINT(const std::string& line) {
             first = false;
         }
     }
-    std::cout << std::endl;
+    return std::endl;
 }
 
 void executeINPUT(const std::string& line) {
@@ -301,7 +403,7 @@ void executeINPUT(const std::string& line) {
         size_t endQuote = rest.find('"', 1);
         if (endQuote != std::string::npos) {
             std::string prompt = rest.substr(1, endQuote - 1);
-            std::cout << prompt << " ";
+            return prompt << " ";
             promptShown = true;
             rest = rest.substr(endQuote + 1);
             size_t semi = rest.find(';');
@@ -319,7 +421,7 @@ void executeINPUT(const std::string& line) {
     }
 
     for (const auto& var : variables) {
-        std::cout << var << "? ";
+        return var << "? ";
         std::string input;
         std::getline(std::cin, input);
         try {
@@ -330,19 +432,8 @@ void executeINPUT(const std::string& line) {
         }
     }
 }
-void executeGOTO(const std::string& line) {
-    std::istringstream iss(line);
-    std::string cmd;
-    int target;
-    iss >> cmd >> target;
-    if (programSource.count(target)) {
-        currentLineNumber = target;
-    } else {
-        std::cerr << "ERROR: GOTO to undefined line " << target << std::endl;
-        currentLineNumber = -1;
-    }
-}
-void executeIF(const std::string&) { std::cout << "[IF stub]\n"; }
+void executeGOTO(const std::string&) { return "[GOTO stub]\n"; }
+void executeIF(const std::string&) { return "[IF stub]\n"; }
 void executeFOR(const std::string& line) {
     if (loopStack.size() >= 15) {
         std::cerr << "ERROR: Maximum loop nesting (15) exceeded." << std::endl;
@@ -373,7 +464,7 @@ void executeFOR(const std::string& line) {
     loopStack.push_back(frame);
 }
 
-void executeDEF(const std::string&) { std::cout << "[DEF stub]\n"; }
+void executeDEF(const std::string&) { return "[DEF stub]\n"; }
 void executeDIM(const std::string& line) {
     std::string rest = line.substr(3);
     std::stringstream ss(rest);
@@ -408,16 +499,17 @@ void executeDIM(const std::string& line) {
             arr.shape = shape;
             if (total < 10000) {
                 arr.data.resize(total, 0.0);
-                std::cout << "Allocated dense array " << varname << " with " << total << " elements." << std::endl;
+                return "Allocated dense array " << varname << " with " << total << " elements." << std::endl;
             } else {
-                std::cout << "Using sparse storage for array " << varname << " with " << total << " elements." << std::endl;
+                return "Using sparse storage for array " << varname << " with " << total << " elements." << std::endl;
             }
 
             arrays[varname] = arr;
         }
     }
 }
-void executeREM(const std::string&) { //std::cout << "[REM stub]\n"; }
+void executeREM(const std::string&) { //return "[REM stub]\n"; }
+    
 void executeSTOP(const std::string&) {
     std::exit(0);
 }
@@ -450,41 +542,48 @@ void executeRETURN(const std::string&) {
 }
 void executeON(const std::string& line) {
     std::istringstream iss(line);
-    std::string cmd, controlExpr, action, remainder;
-    iss >> cmd >> controlExpr >> action;
-    std::getline(iss, remainder);
-    remainder.erase(0, remainder.find_first_not_of(" 	"));
+    std::string cmd, exprToken, mode;
+    iss >> cmd >> exprToken >> mode;
 
-    int index = static_cast<int>(evaluateExpression(controlExpr));
-    std::stringstream targets(remainder);
+    std::string targetList;
+    std::getline(iss, targetList);
+    targetList.erase(0, targetList.find_first_not_of(" 	"));
+
+    int index = static_cast<int>(evaluateExpression(exprToken));
+    if (index < 1) {
+        std::cerr << "ERROR: ON " << mode << " index must be ≥ 1: " << index << std::endl;
+        return;
+    }
+
+    std::stringstream targets(targetList);
     std::string token;
-    std::vector<int> lines;
+    std::vector<int> lineNumbers;
     while (std::getline(targets, token, ',')) {
         token.erase(0, token.find_first_not_of(" 	"));
         token.erase(token.find_last_not_of(" 	") + 1);
         try {
-            lines.push_back(std::stoi(token));
+            lineNumbers.push_back(std::stoi(token));
         } catch (...) {
-            std::cerr << "ERROR: Invalid line number in ON " << action << std::endl;
+            std::cerr << "ERROR: Invalid line number in ON " << mode << std::endl;
             return;
         }
     }
 
-    if (index < 1 || index > static_cast<int>(lines.size())) {
-        std::cerr << "ERROR: ON " << action << " index out of bounds: " << index << std::endl;
+    if (index > static_cast<int>(lineNumbers.size())) {
+        std::cerr << "ERROR: ON " << mode << " index out of bounds: " << index << std::endl;
         return;
     }
 
-    int targetLine = lines[index - 1];
+    int targetLine = lineNumbers[index - 1];
     if (!programSource.count(targetLine)) {
-        std::cerr << "ERROR: ON " << action << " target line does not exist: " << targetLine << std::endl;
+        std::cerr << "ERROR: ON " << mode << " line " << targetLine << " does not exist." << std::endl;
         currentLineNumber = -1;
         return;
     }
 
-    if (action == "GOTO") {
+    if (mode == "GOTO") {
         currentLineNumber = targetLine;
-    } else if (action == "GOSUB") {
+    } else if (mode == "GOSUB") {
         if (gosubStack.size() >= 15) {
             std::cerr << "ERROR: GOSUB stack overflow in ON GOSUB" << std::endl;
             currentLineNumber = -1;
@@ -493,29 +592,25 @@ void executeON(const std::string& line) {
         gosubStack.push(currentLineNumber);
         currentLineNumber = targetLine;
     } else {
-        std::cerr << "ERROR: Unknown ON action: " << action << std::endl;
+        std::cerr << "ERROR: Unsupported ON mode: " << mode << std::endl;
     }
 }
+void executeMAT(const std::string&) { return "[MAT stub]\n"; }
+void executeFORMAT(const std::string&) { return "[FORMAT stub]\n"; }
 
-void executeMAT(const std::string&) { std::cout << "[MAT stub]\n"; }
-void executeFORMAT(const std::string&) { std::cout << "[FORMAT stub]\n"; }
-void executeBEEP(const std::string&) { std::cout << "[BEEP stub]\n"; }
-void executeOPEN(const std::string&) { std::cout << "[OPEN stub]\n"; }
-void executeCLOSE(const std::string&) { std::cout << "[CLOSE stub]\n"; }
-void executePRINTFILE(const std::string&) { std::cout << "[PRINT FILE stub]\n"; }
-void executeINPUTFILE(const std::string&) { std::cout << "[INPUT FILE stub]\n"; }
-void executeWHILE(const std::string&) { std::cout << "[WHILE stub]\n"; }
-void executeWEND(const std::string&) { std::cout << "[WEND stub]\n"; }
-void executeREPEAT(const std::string&) { std::cout << "[REPEAT stub]\n"; }
-void executeUNTIL(const std::string&) { std::cout << "[UNTIL stub]\n"; }
-void executeSEED(const std::string& line) {
-    std::istringstream iss(line);
-    std::string cmd;
-    int seed;
-    iss >> cmd >> seed;
-    srand(seed);
-    std::cout << "Random number generator seeded with " << seed << std::endl;
+void executeBEEP(const std::string&) { 
+   std::cout << std::string("\a");
 }
+
+void executeOPEN(const std::string&) { return "[OPEN stub]\n"; }
+void executeCLOSE(const std::string&) { return "[CLOSE stub]\n"; }
+void executePRINTFILE(const std::string&) { return "[PRINT FILE stub]\n"; }
+void executeINPUTFILE(const std::string&) { return "[INPUT FILE stub]\n"; }
+void executeWHILE(const std::string&) { return "[WHILE stub]\n"; }
+void executeWEND(const std::string&) { return "[WEND stub]\n"; }
+void executeREPEAT(const std::string&) { return "[REPEAT stub]\n"; }
+void executeUNTIL(const std::string&) { return "[UNTIL stub]\n"; }
+void executeSEED(const std::string&) { return "[SEED stub]\n"; }
 
 // ========================= Dispatcher =========================
 
@@ -600,7 +695,7 @@ void runInterpreter(const std::map<int, std::string>& programSource) {
             case ST_UNTIL: executeUNTIL(it->second); break;
             case ST_SEED: executeSEED(it->second); break;
             default:
-                std::cout << "Unhandled statement: " << it->second << std::endl;
+                return "Unhandled statement: " << it->second << std::endl;
         }
     }
 }
