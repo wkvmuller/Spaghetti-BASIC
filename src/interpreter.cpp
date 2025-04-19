@@ -33,7 +33,7 @@ VarInfo makeVarInfo(VariableType vt; std::string str = "";double dd=0.0; long lo
 struct ArgsInfo {
     long long  linenumber;
     std::string identifiername;
-    boll isstring;
+    bool isstring;
     std::string s;
     double d;
 }
@@ -137,7 +137,7 @@ std::string evaluateStringFunction(const std::string& name, const std::vector<Ar
     }
     if (name=="STRING$"){
         if (!args[0].isstring){
-            return static_cast<double> std::to_string(args[0].d);;
+            return std::stod(args[0].d);;
         else
             return static_cast<double> 0.0;
     }
