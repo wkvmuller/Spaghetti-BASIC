@@ -6,6 +6,8 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <stack>
+
 
 enum VariableType {
   VT_UNKNOWN,
@@ -17,44 +19,42 @@ enum VariableType {
 };
 
 struct VarInfo {
-  VariableType VT;
+  VariableType vT;
   std::string s;
   double d;
   long long ll;
-}
+};
 
-std::map<std::string, VarInfo>
-    variables;
+std::map<std::string, VarInfo> variables;
 
-VarInfo makeVarInfo(VariableType vt; std::string str = ""; double dd = 0.0;
-                    long long l = 0) {
-  VariableType tmp;
-  tmp.VT = vt;
-  tmp.s = str;
+VarInfo makeVarInfo(VariableType vt, std::string tmpstr = "", double dd = 0.0, long long l = 0)
+{
+  VarInfo tmp;
+  tmp.vT = vt;
+  tmp.s = tmpstr;
   tmp.d = dd;
   tmp.ll = l;
   return tmp;
-}
+};
 
 struct ArgsInfo {
   long long linenumber;
   std::string identifiername;
-  boll isstring;
+  bool isstring;
   std::string s;
   double d;
-}
+};
 
-ArgsInfo
-makeArgsInfo(long long line; std::string idname; bool boolstring;
-             std::string str; double d) {
+ArgsInfo makeArgsInfo(long long line, std::string idname, bool boolstring=false, std::string str="", double d=0.0)
+{
   ArgsInfo tmp;
   tmp.linenumber = line;
   tmp.identifiername = idname;
   tmp.isstring = boolstring;
   tmp.s = str;
   tmp.d = d;
-  return tmp;
-}
+  std::cerr << "makeArgsInfo(...)\n line<<"<<line<<" \nvar indentifyer:"<<idname<<"\n is string:"<<boolstring<<"\n string\""<<str<<"\"\n double:"<<d<<std::endl;
+};
 
 struct ArrayInfo {
   std::vector<int> shape;
@@ -82,54 +82,45 @@ std::vector<LoopFrame> loopStack;
 
 std::stack<int> gosubStack;
 
-double evaluateFunction(const std::string &name,
-                        const std::vector<ArgsInfo> &args) {
+double evaluateFunction(const std::string &name, const std::vector<ArgsInfo> &args) {
   if (name == "ASCII")
     if (!args[0].isstring || args[0].s.empty()) {
-      std::cerr < "Bas string passed to ASCII("
-                      << args[0].s << ")  line:" << args[0].linenumber
-                      << std::endl;
+      std::cerr << "Bas string passed to ASCII(" << args[0].s << ")  line:" << args[0].linenumber<< std::endl;
       return 0.0;
     } else
       return static_cast<double>(static_cast<unsigned char>(args[0].s[0]));
 
   if (name == "LEN$")
     if (!args[0].isstring) {
-      std::cerr < "bad non string passed to LEN$("
-                      << argc[0].d << ") on line: " << args[0].linenumber
-                      << std::endl;
-      return static_cast<double> - 1;
+      std::cerr << "bad non string passed to LEN$(" << args[0].d << ") on line: " << args[0].linenumber  << std::endl;
+      return static_cast<double>  (- 1  );
     } else
-      return static_cast<double>(args[0].s;.length());
+      return static_cast<double>(args[0].s.length());
 
   if (name == "SIN" || name == "COS" || name == "TAN" || name == "SQR" ||
       name == "STRING$" || name == "LOG" || name == "LOG10" || name == "CLOG" ||
       name == "EXP" || name == "INT" || name == "ROUND" || name == "FLOOR" ||
       name == "CEIL")
-    if (argv[0].isstreng) {
-      std::cerr << "Error on " << name
-                << " passing a string where number expected [" << args[0].s
-                << "]  line:" << args[0].linenumber << std::endl;
-      return 0.0;
+    if (args[0].isstring) {
+      std::cerr << "Error on " << name << " passing a string where number expected [" << args[0].s << "]  line:" << args[0].linenumber << std::endl;
+      return (0.0);
     }
 
   if (name == "LOGX" || name == "POW")
     if (args[1].isstring) {
-      std::cerr << "String passed [...]  " << name << "(" << args[0].d << ",["
-                << args[1].s << "])  line:" << args[0].linenumber <
-          std::endl;
-      return 0.0;
+      std::cerr << "String passed [...]  " << name << "(" << args[0].d << ",["<< args[1].s << "])  line:" << args[0].linenumber << std::endl;
+      return (0.0);
     }
 
   if (name == "STRING$") {
     if (!args[0].isstring)
-      return static_cast<double> std::to_string(args[0].d);
+      return static_cast<double> (std::to_string(args[0].s));
     else
-      return static_cast<double> 0.0;
+      return static_cast<double> (0.0);
   }
 
   if (name == "LOGX")
-    return std::log(args[1].d) / std::log(args[0].d);
+    return static_cast<double> (std::log(args[1].d) / std::log(args[0].d));
   if (name == "SIN")
     return std::sin(args[0].d);
   if (name == "COS")
@@ -141,7 +132,7 @@ double evaluateFunction(const std::string &name,
   if (name == "LOG")
     return std::log(args[0].d);
   if (name == "LOG10" || name == "CLOG")
-    return std::log10(args[0]).d;
+    return static_cast<double> (std::log10(args[0]).d);
   if (name == "EXP")
     return std::exp(args[0].d);
   if (name == "INT")
@@ -153,7 +144,7 @@ double evaluateFunction(const std::string &name,
   if (name == "CEIL")
     return std::ceil(args[0].d);
   if (name == "POW")
-    return std::pow(args[0].d, args[1]).d;
+    return static_cast<double> (std::pow(args[0].d, args[1]).d);
   std::cerr << "Unknown function: " << name << std::endl;
   return 0.0;
 }
@@ -187,7 +178,7 @@ std::string evaluateStringFunction(const std::string &name,
   if (name == "MID$")
     if (args[2].isstring) {
       std::cerr << "Passed a string [...](not a number)to " << name << " ("
-                << args[0].s << "," << args[1].d <
+                << args[0].s << "," << args[1].d <<
           ",[" << args[2].s << "]) on line: " << args[0].linenumber
                << std::endl;
       return "";
@@ -253,7 +244,7 @@ std::string evaluateStringFunction(const std::string &name,
 
 class Parser {
 public:
-  Parser(const std::string &expr) : input(expr), pos(0) {}
+  Parser(const std::string &expr constant long long linenumber) : input(expr), pos(0) {}
 
   double parse() {
     double result = parseExpression();
@@ -332,14 +323,14 @@ private:
       std::string name = parseIdentifier();
       if (peek() == '(') {
         get();
-        std::vector<double> args;
+        std::vector<ArgsInfo> args;
         if (peek() != ')') {
           do {
-            args.push_back(parseExpression());
+            args.push_back(makeArgsInfo(long long linenumber , name, true, {parseExpression());
           } while (peek() == ',' && get());
         }
         if (get() != ')') {
-          tstd::cerr << "Expected ')' after function args" << std::endl;
+          std::cerr << "Expected ')' after function args" << std::endl;
           break;
         }
         if (name == "TIME$" || name == "DATE$" || name == "CHR$" ||
@@ -370,8 +361,8 @@ private:
   }
 };
 
-double evaluateExpression(const std::string &expr) {
-  return Parser(expr).parse();
+double evaluateExpression(const std::string &exprconts long long currentline) {
+  return Parser(expr,currentline).parse();
 }
 
 // ========================= Statement Handlers =========================
@@ -396,7 +387,7 @@ void executeLET(const std::string &line) {
     while (std::getline(ss, token, ',')) {
       indices.push_back(std::stoi(token));
     }
-    double value = evaluateExpression(expr);
+    double value = evaluateExpression(expr,currentkine);
     if (arrays.count(var)) {
       ArrayInfo &arr = arrays[var];
       if (indices.size() != arr.shape.size()) {
@@ -422,7 +413,7 @@ void executeLET(const std::string &line) {
       std::cerr << "ERROR: Undeclared array " << var << std::endl;
     }
   } else {
-    double value = evaluateExpression(expr);
+    double value = evaluateExpression(expr,currentline);
     variables[target] = value;
     return target << " = " << value << std::endl;
   }
@@ -471,7 +462,7 @@ void executePRINT(const std::string &line) {
           }
         } else {
           try {
-            return evaluateExpression(token);
+            return evaluateExpression(token,currentline);
           } catch (...) {
             std::cerr << "[ERR]";
           }
@@ -659,7 +650,7 @@ void executeON(const std::string &line) {
   std::getline(iss, targetList);
   targetList.erase(0, targetList.find_first_not_of(" 	"));
 
-  int index = static_cast<int>(evaluateExpression(exprToken));
+  int index = static_cast<int>(evaluateExpression(exprToken),currentline );
   if (index < 1) {
     std::cerr << "ERROR: ON " << mode << " index must be ≥ 1: " << index
               << std::endl;
@@ -753,312 +744,3 @@ std::vector<FormatField> parseFormatString(const std::string &fmt) {
   return fields;
 }
 
-/
-
-    void executePRINTUSING(const std::string &line) {
-  std::istringstream iss(line);
-  std::string cmd, usingToken;
-  int formatLine = 0;
-  iss >> cmd >> usingToken >> formatLine;
-
-  std::string printItems;
-  std::getline(iss, printItems);
-  printItems.erase(0, printItems.find_first_not_of(" 	,"));
-
-  if (!programSource.count(formatLine)) {
-    std::cerr << "ERROR: Format line " << formatLine << " not found."
-              << std::endl;
-    return;
-  }
-
-  std::string formatDef = programSource[formatLine];
-  size_t pos = formatDef.find(":=");
-  if (pos == std::string::npos) {
-    std::cerr << "ERROR: Format line " << formatLine << " missing :=."
-              << std::endl;
-    return;
-  }
-
-  std::string formatString = formatDef.substr(pos + 2);
-  formatString.erase(0, formatString.find_first_not_of(" 	\""));
-  formatString.erase(formatString.find_last_not_of(" 	\"") + 1);
-
-  std::vector<FormatField> fields = parseFormatString(formatString);
-
-  std::vector<std::string> values;
-  std::stringstream ss(printItems);
-  std::string item;
-  while (std::getline(ss, item, ',')) {
-    item.erase(0, item.find_first_not_of(" 	"));
-    item.erase(item.find_last_not_of(" 	") + 1);
-    values.push_back(item);
-  }
-
-  size_t valIndex = 0;
-  for (const auto &field : fields) {
-    if (field.type == FIELD_TEXT) {
-      std::cout << field.content;
-    } else if (valIndex >= values.size()) {
-      std::cerr << "[ERR: missing value]";
-    } else {
-      const std::string &expr = values[valIndex];
-      if (field.type == FIELD_NUMERIC) {
-        double val = evaluateExpression(expr);
-        std::cout << val;
-      } else if (field.type == FIELD_STRING) {
-        std::string s = evaluateStringFunction("STRING$", {makeArgsInfo(expr)});
-        size_t width = field.content.size();
-        char align = field.content[0];
-        if (align != 'l' && align != 'r' && align != 'c')
-          align = 'l';
-        if (s.length() > width)
-          s = s.substr(0, width);
-        if (align == 'l')
-          std::cout << s << std::string(width - s.length(), ' ');
-        else if (align == 'r')
-          std::cout << std::string(width - s.length(), ' ') << s;
-        else
-          std::cout << STRINGFORMAT(s, field.content);
-      }
-      valIndex++;
-    }
-  }
-
-  std::cout << std::endl;
-}
-
-void executeBEEP(const std::string &) { std::cout << std::string("\a"); }
-
-void executeOPEN(const std::string &) { return "[OPEN stub]\n"; }
-void executeCLOSE(const std::string &) { return "[CLOSE stub]\n"; }
-void executePRINTFILE(const std::string &) { return "[PRINT FILE stub]\n"; }
-void executeINPUTFILE(const std::string &) { return "[INPUT FILE stub]\n"; }
-void executeWHILE(const std::string &) { return "[WHILE stub]\n"; }
-void executeWEND(const std::string &) { return "[WEND stub]\n"; }
-void executeREPEAT(const std::string &) { return "[REPEAT stub]\n"; }
-void executeUNTIL(const std::string &) { return "[UNTIL stub]\n"; }
-void executeSEED(const std::string &) { return "[SEED stub]\n"; }
-
-// ========================= Dispatcher =========================
-
-enum StatementType {
-  ST_UNKNOWN,
-  ST_LET,
-  ST_PRINT,
-  ST_INPUT,
-  ST_GOTO,
-  ST_IF,
-  ST_FOR,
-  ST_NEXT,
-  ST_READ,
-  ST_DATA,
-  ST_RESTORE,
-  ST_END,
-  ST_DEF,
-  ST_DIM,
-  ST_REM,
-  ST_STOP,
-  ST_GOSUB,
-  ST_RETURN,
-  ST_ON,
-  ST_MAT,
-  ST_FORMAT,
-  ST_BEEP,
-  ST_OPEN,
-  ST_CLOSE,
-  ST_PRINTFILE,
-  ST_INPUTFILE,
-  ST_WHILE,
-  ST_WEND,
-  ST_REPEAT,
-  ST_UNTIL,
-  ST_SEED
-};
-
-StatementType identifyStatement(const std::string &keyword) {
-  if (keyword == "LET")
-    return ST_LET;
-  if (keyword == "PRINT")
-    return ST_PRINT;
-  if (keyword == "INPUT")
-    return ST_INPUT;
-  if (keyword == "GOTO")
-    return ST_GOTO;
-  if (keyword == "IF")
-    return ST_IF;
-  if (keyword == "FOR")
-    return ST_FOR;
-  if (keyword == "NEXT")
-    return ST_NEXT;
-  if (keyword == "READ")
-    return ST_READ;
-  if (keyword == "DATA")
-    return ST_DATA;
-  if (keyword == "RESTORE")
-    return ST_RESTORE;
-  if (keyword == "END")
-    return ST_END;
-  if (keyword == "DEF")
-    return ST_DEF;
-  if (keyword == "DIM")
-    return ST_DIM;
-  if (keyword == "REM")
-    return ST_REM;
-  if (keyword == "STOP")
-    return ST_STOP;
-  if (keyword == "GOSUB")
-    return ST_GOSUB;
-  if (keyword == "RETURN")
-    return ST_RETURN;
-  if (keyword == "ON")
-    return ST_ON;
-  if (keyword == "MAT")
-    return ST_MAT;
-  if (keyword == ":=")
-    return ST_FORMAT;
-  if (keyword == "BEEP")
-    return ST_BEEP;
-  if (keyword == "OPEN")
-    return ST_OPEN;
-  if (keyword == "CLOSE")
-    return ST_CLOSE;
-  if (keyword == "PRINT#")
-    return ST_PRINTFILE;
-  if (keyword == "INPUT#")
-    return ST_INPUTFILE;
-  if (keyword == "WHILE")
-    return ST_WHILE;
-  if (keyword == "WEND")
-    return ST_WEND;
-  if (keyword == "REPEAT")
-    return ST_REPEAT;
-  if (keyword == "UNTIL")
-    return ST_UNTIL;
-  if (keyword == "SEED")
-    return ST_SEED;
-  return ST_UNKNOWN;
-}
-
-void runInterpreter(const std::map<int, std::string> &programSource) {
-  for (std::map<int, std::string>::const_iterator it = programSource.begin();
-       it != programSource.end(); ++it) {
-    std::istringstream iss(it->second);
-    std::string keyword;
-    iss >> keyword;
-    for (size_t i = 0; i < keyword.length(); ++i)
-      keyword[i] = toupper(keyword[i]);
-
-    StatementType stmt = identifyStatement(keyword);
-    switch (stmt) {
-    case ST_LET:
-      executeLET(it->second);
-      break;
-    case ST_PRINT:
-      executePRINT(it->second);
-      break;
-    case ST_INPUT:
-      executeINPUT(it->second);
-      break;
-    case ST_GOTO:
-      executeGOTO(it->second);
-      break;
-    case ST_IF:
-      executeIF(it->second);
-      break;
-    case ST_FOR:
-      executeFOR(it->second);
-      break;
-    case ST_NEXT:
-      executeNEXT(it->second);
-      break;
-    case ST_READ:
-      executeREAD(it->second);
-      break;
-    case ST_DATA:
-      executeDATA(it->second);
-      break;
-    case ST_RESTORE:
-      executeRESTORE(it->second);
-      break;
-    case ST_END:
-      executeEND(it->second);
-      break;
-    case ST_DEF:
-      executeDEF(it->second);
-      break;
-    case ST_DIM:
-      executeDIM(it->second);
-      break;
-    case ST_REM:
-      executeREM(it->second);
-      break;
-    case ST_STOP:
-      executeSTOP(it->second);
-      break;
-    case ST_GOSUB:
-      executeGOSUB(it->second);
-      break;
-    case ST_RETURN:
-      executeRETURN(it->second);
-      break;
-    case ST_ON:
-      executeON(it->second);
-      break;
-    case ST_MAT:
-      executeMAT(it->second);
-      break;
-    case ST_FORMAT:
-      executeFORMAT(it->second);
-      break;
-    case ST_BEEP:
-      executeBEEP(it->second);
-      break;
-    case ST_OPEN:
-      executeOPEN(it->second);
-      break;
-    case ST_CLOSE:
-      executeCLOSE(it->second);
-      break;
-    case ST_PRINTFILE:
-      executePRINTFILE(it->second);
-      break;
-    case ST_INPUTFILE:
-      executeINPUTFILE(it->second);
-      break;
-    case ST_WHILE:
-      executeWHILE(it->second);
-      break;
-    case ST_WEND:
-      executeWEND(it->second);
-      break;
-    case ST_REPEAT:
-      executeREPEAT(it->second);
-      break;
-    case ST_UNTIL:
-      executeUNTIL(it->second);
-      break;
-    case ST_SEED:
-      executeSEED(it->second);
-      break;
-    default:
-      return "Unhandled statement: " << it->second << std::endl;
-    }
-  }
-}
-
-std::string STRINGFORMAT(const std::string &s, const std::string &formatField) {
-  size_t width = formatField.size();
-  char align = formatField[0];
-  std::string result;
-
-  std::string clipped = s.length() > width ? s.substr(0, width) : s;
-
-  std::cout << STRINGFORMAT(s, field.content);
-  else std::cout << STRINGFORMAT(s, field.content);
-  else std::cout << STRINGFORMAT(s, field.content);
-  else {
-    result = clipped + std::string(width - clipped.length(), ' ');
-  }
-
-  return result;
-}
