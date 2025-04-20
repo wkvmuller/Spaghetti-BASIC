@@ -33,7 +33,7 @@ VarInfo makeVarInfo(VariableType vt; std::string str = "";double dd=0.0; long lo
 struct ArgsInfo {
     long long  linenumber;
     std::string identifiername;
-    bool isstring;
+    boll isstring;
     std::string s;
     double d;
 }
@@ -64,6 +64,14 @@ struct LoopFrame {
     int returnLine;
 };
 
+
+enum FieldType { FIELD_TEXT, FIELD_NUMERIC, FIELD_STRING };
+
+struct FormatField {
+    FieldType type;
+    std::string content;
+};
+
 std::vector<LoopFrame> loopStack;
 
 std::stack<int> gosubStack;
@@ -89,17 +97,17 @@ if (name == "LEN$") {
 
         if (name == "SIN" || name == "COS" || name == "TAN" || name == "SQR" || name == "LOG" || name == "LOG10" || name == "CLOG") || name == "EXP" || name == "INT" || name == "ROUND" || name == "FLOOR" || name == "CEIL"){
             if(argv[0].isstreng){
-                std::cerr<<"Error on "<<name<<" passing a string where number expected ["<<args[0].s<<]  line:"<<args[0].linemumber<<std::endl;
+                std::cerr<<"Error on "<<name<<" passing a string where number expected ["<<args[0].s<<"]  line:"<<args[0].linenumber<<std::endl;
                 return 0.0;
              }   
         }
         if (name == "LOGX" || name == "POW") {
             if (args[0].isstring){  
-                std::cerr<<"String passed [...]  "<<name<<"(["<<args[0].s<<"],"<<args[1].d<<")  line:<<args[0].linenumber<std::endl;
+                std::cerr<<"String passed [...]  "<<name<<"(["<<args[0].s<<"],"<<args[1].d<<")  line:"<<args[0].linenumber<std::endl;
                 return 0.0;      
             }
             if (args[1].isstring){  
-                std::cerr<<"String passed [...]  "<<name<<"("<<args[0].d<<",["<<args[1].s<<"])  line:<<args[0].linenumber<std::endl;
+                std::cerr<<"String passed [...]  "<<name<<"("<<args[0].d<<",["<<args[1].s<<"])  line:"<<args[0].linenumber<std::endl;
                 return 0.0;      
             }
         }   
@@ -123,6 +131,22 @@ if (name == "LEN$") {
 }
 
 std::string evaluateStringFunction(const std::string& name, const std::vector<ArgsInfo>& args) {
+        if (name == "MID$" || name == "TIME$" ||name == "DATE$" || name=="STRING$" || name == "CHR$" || name == "LEFT$" || name == "RIGHT$" ||  ) 
+         if(!args[0].isstring) { 
+            std::cerr<<"Passed a number [...](not a string)to "<<name<<"(["<< args[0].d<<"],"<<args[1].d<<","<<args[2].d<<") on line: "<<args[0].linenumber<<std::endl;
+            return"";
+            }
+        if (name == "MID$" || name == "TIME$" ||name == "DATE$" || name=="STRING$" || name == "CHR$" || name == "LEFT$" || name == "RIGHT$" ||  )
+          if (args[1].isstring){
+            std::cerr<<"Passed a string [...](not a number)to "<<name<<" ("<< args[0].s<<",["<<args[1].s<"],"<<args[2].d<<") on line: "<<args[0].linenumber<<std::endl;
+                        return "";
+        }
+        if (name == "MID$" )
+         if (args[2].isstring){
+            std::cerr<<"Passed a string [...](not a number)to "<<name<<" ("<< args[0].s<<","<<args[1].d<",["<<args[2].s<<"]) on line: "<<args[0].linenumber<<std::endl;
+                        return "";
+         }
+         
     if (name == "TIME$") {
         time_t now = time(nullptr);
         char buffer[64];
@@ -137,30 +161,18 @@ std::string evaluateStringFunction(const std::string& name, const std::vector<Ar
     }
     if (name=="STRING$"){
         if (!args[0].isstring){
-            return std::stod(args[0].d);;
+            return static_cast<double> std::to_string(args[0].d);;
         else
             return static_cast<double> 0.0;
     }
 
     if (name == "CHR$") {
-        if ( argc[0].isstring){
-            std::cerr <<"Error - string passed to CHR$("<<argc.s<<") line:" << args[0].linenumber << std::endl;
-            return "";
-        }
         int c = static_cast<int>(args[0].d);
         if (c < 0 || c > 255) return "";
         return std::string(1, static_cast<char>(c));
     }
        
     if (name == "LEFT$") {
-        if(!args[0].isstring) { 
-            std::cerr<<"Passed a number [...](not a string)to LEFT$(["<< args[0].d<<"],"<<args[1].d<<") on line: "<<args[0].linenumber<<std::endl;
-            return"";
-         } else if (args[1].isstring){
-            std::cerr<<"Passed a string [...](not a number)to LEFT$("<< args[0].s<<",["<<args[1].s<<"]) on line: "<<args[0].linenumber<<std::endl;
-            return "";
-         }
-         
         int n = static_cast<int>(args[1].d);
         if (n < 0) n = 0;
         if (n > static_cast<int>(args[0].s.length())) n = args[0].s.length();
@@ -168,31 +180,12 @@ std::string evaluateStringFunction(const std::string& name, const std::vector<Ar
     }
     
     if (name == "RIGHT$") {
-        if(!args[0].isstring) { 
-            std::cerr<<"Passed a number [...](not a string)to RIGHT$(["<< args[0].d<<"],"<<args[1].d<<") on line: "<<args[0].linenumber<<std::endl;
-            return"";
-         } else if (args[1].isstring){
-            std::cerr<<"Passed a string [...](not a number)to RIGHT$("<< args[0].s<<",["<<args[1].s<<"]) on line: "<<args[0].linenumber<<std::endl;
-            return "";
-         }
-
         int n = static_cast<int>(args[1].d);
         if (n < 0) n = 0;
         if (n > static_cast<int>(args[0].s.length())) n = args[0].s.length();
         return args[0].s.substr(args[0].s.length() - n);
     }
     if (name == "MID$") {
-         if(!args[0].isstring) { 
-            std::cerr<<"Passed a number [...](not a string)to MID$(["<< args[0].d<<"],"<<args[1].d<<","<<args[2].d<<") on line: "<<args[0].linenumber<<std::endl;
-            return"";
-         } else if (args[1].isstring){
-            std::cerr<<"Passed a string [...](not a number)to MID$("<< args[0].s<<",["<<args[1].s<"],"<<args[2].d<<") on line: "<<args[0].linenumber<<std::endl;
-            return "";
-         } else if (args[2].isstring){
-            std::cerr<<"Passed a string [...](not a number)to MID$("<< args[0].s<<","<<args[1].d<",["<<args[2].s<<"]) on line: "<<args[0].linenumber<<std::endl;
-            return "";
-         }
-
         int start = static_cast<int>(args[1].d);
         int len = static_cast<int>(args[2].d);
         if (start < 1) start = 1;
@@ -291,7 +284,7 @@ private:
                         args.push_back(parseExpression());
                     } while (peek() == ',' && get());
                 }
-                if (get() != ')') throw std::runtime_error("Expected ')' after function args");
+                if (get() != ')') {tstd::cerr << "Expected ')' after function args"<<std::endl; break;
                    if (name == "TIME$" || name == "DATE$"|| name=="STRING$" || name == "CHR$" || name == "LEFT$" || name == "RIGHT$" || name == "MID$") 
                        return evaluateStringFunction(name,args);
                    else
@@ -645,7 +638,119 @@ void executeON(const std::string& line) {
     }
 }
 void executeMAT(const std::string&) { return "[MAT stub]\n"; }
+
+
 void executeFORMAT(const std::string&) { return "[FORMAT stub]\n"; }
+
+
+// Splits a format string into numeric, string, and text fields
+std::vector<FormatField> parseFormatString(const std::string& fmt) {
+    std::vector<FormatField> fields;
+    std::string current;
+    FieldType currentType = FIELD_TEXT;
+
+    auto flush = [&]() {
+        if (!current.empty()) {
+            fields.push_back({currentType, current});
+            current.clear();
+        }
+    };
+
+    for (size_t i = 0; i < fmt.size(); ++i) {
+        char c = fmt[i];
+
+        if (c == '#') {
+            if (currentType != FIELD_NUMERIC) {
+                flush();
+                currentType = FIELD_NUMERIC;
+            }
+            current += c;
+        } else if (c == 'l' || c == 'r' || c == 'c') {
+            if (currentType != FIELD_STRING) {
+                flush();
+                currentType = FIELD_STRING;
+            }
+            current += c;
+        } else {
+            if (currentType != FIELD_TEXT) {
+                flush();
+                currentType = FIELD_TEXT;
+            }
+            current += c;
+        }
+    }
+
+    flush();
+    return fields;
+}
+
+/
+
+void executePRINTUSING(const std::string& line) {
+    std::istringstream iss(line);
+    std::string cmd, usingToken;
+    int formatLine = 0;
+    iss >> cmd >> usingToken >> formatLine;
+
+    std::string printItems;
+    std::getline(iss, printItems);
+    printItems.erase(0, printItems.find_first_not_of(" 	,"));
+
+    if (!programSource.count(formatLine)) {
+        std::cerr << "ERROR: Format line " << formatLine << " not found." << std::endl;
+        return;
+    }
+
+    std::string formatDef = programSource[formatLine];
+    size_t pos = formatDef.find(":=");
+    if (pos == std::string::npos) {
+        std::cerr << "ERROR: Format line " << formatLine << " missing :=." << std::endl;
+        return;
+    }
+
+    std::string formatString = formatDef.substr(pos + 2);
+    formatString.erase(0, formatString.find_first_not_of(" 	\""));
+    formatString.erase(formatString.find_last_not_of(" 	\"") + 1);
+
+    std::vector<FormatField> fields = parseFormatString(formatString);
+
+    std::vector<std::string> values;
+    std::stringstream ss(printItems);
+    std::string item;
+    while (std::getline(ss, item, ',')) {
+        item.erase(0, item.find_first_not_of(" 	"));
+        item.erase(item.find_last_not_of(" 	") + 1);
+        values.push_back(item);
+    }
+
+    size_t valIndex = 0;
+    for (const auto& field : fields) {
+        if (field.type == FIELD_TEXT) {
+            std::cout << field.content;
+        } else if (valIndex >= values.size()) {
+            std::cerr << "[ERR: missing value]";
+        } else {
+            const std::string& expr = values[valIndex];
+            if (field.type == FIELD_NUMERIC) {
+                double val = evaluateExpression(expr);
+                std::cout << val;
+            } else if (field.type == FIELD_STRING) {
+                std::string s = evaluateStringFunction("STRING$", {makeArgsInfo(expr)});
+                size_t width = field.content.size();
+                char align = field.content[0];
+                if (align != 'l' && align != 'r' && align != 'c') align = 'l';
+                if (s.length() > width) s = s.substr(0, width);
+                if (align == 'l') std::cout << s << std::string(width - s.length(), ' ');
+                else if (align == 'r') std::cout << std::string(width - s.length(), ' ') << s;
+                else std::cout << STRINGFORMAT(s, field.content);
+            }
+            valIndex++;
+        }
+    }
+
+    std::cout << std::endl;
+}
+
 
 void executeBEEP(const std::string&) { 
    std::cout << std::string("\a");
@@ -747,4 +852,19 @@ void runInterpreter(const std::map<int, std::string>& programSource) {
                 return "Unhandled statement: " << it->second << std::endl;
         }
     }
+}
+
+
+std::string STRINGFORMAT(const std::string& s, const std::string& formatField) {
+    size_t width = formatField.size();
+    char align = formatField[0];
+    std::string result;
+
+    std::string clipped = s.length() > width ? s.substr(0, width) : s;
+
+    std::cout << STRINGFORMAT(s, field.content); else std::cout << STRINGFORMAT(s, field.content); else std::cout << STRINGFORMAT(s, field.content); else {
+        result = clipped + std::string(width - clipped.length(), ' ');
+    }
+
+    return result;
 }
