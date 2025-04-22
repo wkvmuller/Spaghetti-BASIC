@@ -95,19 +95,24 @@ void interactiveLoop() {
         programSource.clear();
         load(filename);
       }
-      runInterpreter(programSource);
-    } else if (command == "SYNTAX") {
-      checkSyntax(programSource);
-    } else {
-      std::cout << "Unrecognized command: " << command << std::endl;
+      try {
+        runInterpreter(programSource);
+      } catch (const std::runtime_error &e) {
+        std::cerr << "Runtime error: " << e.what() << std::endl;
+      }
+      } else if (command == "SYNTAX") {
+        checkSyntax(programSource);
+      }
+      else {
+        std::cout << "Unrecognized command: " << command << std::endl;
+      }
     }
   }
-}
 
-int main(int argc, char *argv[]) {
-  if (argc > 1) {
-    load(argv[1]);
+  int main(int argc, char *argv[]) {
+    if (argc > 1) {
+      load(argv[1]);
+    }
+    interactiveLoop();
+    return 0;
   }
-  interactiveLoop();
-  return 0;
-}
