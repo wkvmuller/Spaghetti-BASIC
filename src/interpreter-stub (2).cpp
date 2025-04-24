@@ -1170,6 +1170,94 @@ bool invertMatrix(const std::vector<double>& input, std::vector<double>& output,
 
 
 void evaluateMATExpression(const std::string& target, const std::string& expression) {
+    
+    if (expr.find("SUM(") == 0) {
+        size_t open = expr.find("(");
+        size_t close = expr.find(")");
+        std::string source = expr.substr(open + 1, close - open - 1);
+        if (arrays.find(source) == arrays.end()) {
+            std::cerr << "ERROR: SUM matrix not found: " << source << std::endl;
+            return;
+        }
+        const ArrayInfo& mat = arrays[source];
+        double sum = 0.0;
+        if (mat.dimensions >= 4) {
+            for (const auto& kv : mat.sparse) sum += kv.second;
+        } else {
+            for (double val : mat.data) sum += val;
+        }
+        ArrayInfo result;
+        result.dimensions = 2;
+        result.shape = {1, 1};
+        result.data = {sum};
+        arrays[target] = result;
+        return;
+    }
+
+    if (expr.find("DOT(") == 0) {
+        size_t open = expr.find("(");
+        size_t comma = expr.find(",", open);
+        size_t close = expr.find(")", comma);
+        std::string lhs = expr.substr(open + 1, comma - open - 1);
+        std::string rhs = expr.substr(comma + 1, close - comma - 1);
+        lhs.erase(0, lhs.find_first_not_of(" 	"));
+        lhs.erase(lhs.find_last_not_of(" 	") + 1);
+        rhs.erase(0, rhs.find_first_not_of(" 	"));
+        rhs.erase(rhs.find_last_not_of(" 	") + 1);
+        if (arrays.find(lhs) == arrays.end() || arrays.find(rhs) == arrays.end()) {
+            std::cerr << "ERROR: DOT matrix not found: " << lhs << ", " << rhs << std::endl;
+            return;
+        }
+        const ArrayInfo& a = arrays[lhs];
+        const ArrayInfo& b = arrays[rhs];
+        if (a.dimensions != 2 || b.dimensions != 2 || a.shape[1] != b.shape[0]) {
+            std::cerr << "ERROR: DOT requires 2D matrices with shape (m,n)*(n,k)
+";
+            return;
+        }
+
+        ArrayInfo result;
+        result.dimensions = 2;
+        result.shape = { a.shape[0], b.shape[1] };
+        result.data.resize(result.shape[0] * result.shape[1]);
+
+        for (size_t i = 0; i < a.shape[0]; ++i) {
+            for (size_t j = 0; j < b.shape[1]; ++j) {
+                double sum = 0.0;
+                for (size_t k = 0; k < a.shape[1]; ++k) {
+                    sum += a.data[i * a.shape[1] + k] * b.data[k * b.shape[1] + j];
+                }
+                result.data[i * result.shape[1] + j] = sum;
+            }
+        }
+
+        arrays[target] = result;
+        return;
+    }
+
+if (expr.find("DETERMINANT(") == 0) {
+        size_t open = expr.find("(");
+        size_t close = expr.find(")");
+        std::string source = expr.substr(open + 1, close - open - 1);
+        if (arrays.find(source) == arrays.end()) {
+            std::cerr << "ERROR: Matrix not found: " << source << std::endl;
+            return;
+        }
+        const ArrayInfo& mat = arrays[source];
+        if (mat.dimensions != 2 || mat.shape[0] != mat.shape[1]) {
+            std::cerr << "ERROR: DETERMINANT requires a square 2D matrix.
+";
+            return;
+        }
+        double resultVal = determinant(mat.data, mat.shape[0]);
+        ArrayInfo result;
+        result.dimensions = 2;
+        result.shape = {1, 1};
+        result.data = { resultVal };
+        arrays[target] = result;
+        return;
+    }
+
     std::string expr = expression;
     expr.erase(0, expr.find_first_not_of(" 	"));
 
@@ -1234,6 +1322,44 @@ void evaluateMATExpression(const std::string& target, const std::string& express
 
     std::istringstream iss(expr);
     std::string token1, op, token2;
+
+    std::istringstream iss_check(expr);
+    std::string left, op, right;
+    iss_check >> left >> op >> right;
+    if (op == "*" && arrays.find(left) == arrays.end() && arrays.find(right) != arrays.end()) {
+        // SCALAR * MATRIX
+        double scalar = std::stod(left);
+        const ArrayInfo& mat = arrays[right];
+        ArrayInfo result = mat;
+        if (mat.dimensions >= 4) {
+            for (auto& [key, val] : result.sparse) {
+                val *= scalar;
+            }
+        } else {
+            for (auto& val : result.data) {
+                val *= scalar;
+            }
+        }
+        arrays[target] = result;
+        return;
+    } else if (op == "*" && arrays.find(left) != arrays.end() && arrays.find(right) == arrays.end()) {
+        // MATRIX * SCALAR
+        double scalar = std::stod(right);
+        const ArrayInfo& mat = arrays[left];
+        ArrayInfo result = mat;
+        if (mat.dimensions >= 4) {
+            for (auto& [key, val] : result.sparse) {
+                val *= scalar;
+            }
+        } else {
+            for (auto& val : result.data) {
+                val *= scalar;
+            }
+        }
+        arrays[target] = result;
+        return;
+    }
+
     iss >> token1;
 
     if (iss >> op >> token2) {
@@ -1293,4 +1419,28 @@ void evaluateMATExpression(const std::string& target, const std::string& express
         }
         arrays[target] = arrays[token1];
     }
+}
+
+
+double determinant(const std::vector<double>& mat, int n) {
+    if (n == 1) return mat[0];
+    if (n == 2) return mat[0] * mat[3] - mat[1] * mat[2];
+
+    double det = 0.0;
+    std::vector<double> submat((n - 1) * (n - 1));
+    for (int col = 0; col < n; ++col) {
+        int subi = 0;
+        for (int i = 1; i < n; ++i) {
+            int subj = 0;
+            for (int j = 0; j < n; ++j) {
+                if (j == col) continue;
+                submat[subi * (n - 1) + subj] = mat[i * n + j];
+                subj++;
+            }
+            subi++;
+        }
+        double sign = (col % 2 == 0) ? 1.0 : -1.0;
+        det += sign * mat[col] * determinant(submat, n - 1);
+    }
+    return det;
 }
