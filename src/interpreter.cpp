@@ -563,23 +563,26 @@ void executeLET(const std::string& line) {
     std::getline(iss, expr);
     expr.erase(0, expr.find_first_not_of(" 	"));
 
-    double value = evaluateExpression(expr);
+    ArgsInfo value = evaluateFunction("VALUE", {makeArgsInfo(expr)});
 
-    VarInfo info;
-    info.vT = VT_DOUBLE;
-    info.d = value;
-    variables[target] = info;
+    std::string name;
+    std::vector<int> indices;
+    if (parseIndexedArray(target, name, indices)) {
+        setSparseValue(name, indices, value);
+    } else {
+        VarInfo info;
+        if (value.isstring) {
+            info.vT = VT_STRING;
+            info.s = value.s;
+        } else {
+            info.vT = VT_DOUBLE;
+            info.d = value.d;
+        }
+        variables[target] = info;
+    }
 
-    std::cout << target << " = " << value << std::endl;
-
-    double value = evaluateExpression(expr, currentline);
-    if (arrays.count(var)) {
-      ArrayInfo &arr = arrays[var];
-      if (indices.size() != arr.shape.size()) {
-        std::cerr << "ERROR: Index count mismatch for array " << var
-                  << std::endl;
-        return;
-      }
+    std::cout << target << " = " << (value.isstring ? value.s : std::to_string(value.d)) << std::endl;
+}
       if (arr.data.size()) {
         int flat = 0, stride = 1;
         for (int i = indices.size() - 1; i >= 0; --i) {
@@ -606,20 +609,35 @@ void executeLET(const std::string& line) {
   }
 }
 
-void executePRINT(const std::string &line) {
-  std::string rest = line.substr(5); // after "PRINT"
-  std::stringstream ss(rest);
-  std::string token;
-  bool first = true;
-  while (std::getline(ss, token, ',')) {
-    token.erase(0, token.find_first_not_of(" \t"));
-    token.erase(token.find_last_not_of(" \t") + 1);
-    if (!first)
-      std::cout<< " ";
-    if (!token.empty()) {
-      if (token.front() == '\"' && token.back() == '\"') {
-        return token.substr(1, token.length() - 2);
-      } else {
+void executePRINT(const std::string& line) {
+    std::istringstream iss(line);
+    std::string cmd;
+    iss >> cmd;
+    std::string items;
+    std::getline(iss, items);
+    std::stringstream ss(items);
+    std::string token;
+    while (std::getline(ss, token, ',')) {
+        token.erase(0, token.find_first_not_of(" 	"));
+        token.erase(token.find_last_not_of(" 	") + 1);
+        std::string name;
+        std::vector<int> indices;
+        if (parseIndexedArray(token, name, indices)) {
+            ArgsInfo val = getSparseValue(name, indices);
+            if (val.isstring) std::cout << val.s;
+            else std::cout << val.d;
+        } else {
+            if (variables.count(token)) {
+                VarInfo& v = variables[token];
+                if (v.VT == VT_STRING) std::cout << v.s;
+                else std::cout << v.d;
+            } else {
+                std::cout << "[undef:" << token << "]";
+            }
+        }
+    }
+    std::cout << std::endl;
+} else {
         size_t paren = token.find('(');
         if (paren != std::string::npos && token.back() == ')') {
           std::string name = token.substr(0, paren);
