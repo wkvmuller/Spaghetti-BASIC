@@ -956,7 +956,18 @@ void executeON(const std::string &line) {
   }
 }
 
-void executeMAT(const std::string &) {}
+
+void executeMAT(const std::string& line) {
+    std::istringstream iss(line);
+    std::string cmd, target, equals;
+    iss >> cmd >> target >> equals;
+    std::string expression;
+    std::getline(iss, expression);
+    expression.erase(0, expression.find_first_not_of(" 	"));
+    evaluateMATExpression(target, expression);
+}
+
+
 
 std::string STRINGFORMAT(const std::string &s, const std::string &formatField) {
   size_t width = formatField.size();
