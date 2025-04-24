@@ -1686,72 +1686,7 @@ bool invertMatrix(const std::vector<double>& input, std::vector<double>& output,
 
 
 void evaluateMATExpression(const std::string& target, const std::string& expression) {
-    
-    if (expr.find("SUM(") == 0) {
-        size_t open = expr.find("(");
-        size_t close = expr.find(")");
-        std::string source = expr.substr(open + 1, close - open - 1);
-        if (arrays.find(source) == arrays.end()) {
-            std::cerr << "ERROR: SUM matrix not found: " << source << std::endl;
-            return;
-        }
-        const ArrayInfo& mat = arrays[source];
-        double sum = 0.0;
-        if (mat.dimensions >= 4) {
-            for (const auto& kv : mat.sparse) sum += kv.second;
-        } else {
-            for (double val : mat.data) sum += val;
-        }
-        ArrayInfo result;
-        result.dimensions = 2;
-        result.shape = {1, 1};
-        result.data = {sum};
-        arrays[target] = result;
-        return;
-    }
-
-    if (expr.find("DOT(") == 0) {
-        size_t open = expr.find("(");
-        size_t comma = expr.find(",", open);
-        size_t close = expr.find(")", comma);
-        std::string lhs = expr.substr(open + 1, comma - open - 1);
-        std::string rhs = expr.substr(comma + 1, close - comma - 1);
-        lhs.erase(0, lhs.find_first_not_of(" 	"));
-        lhs.erase(lhs.find_last_not_of(" 	") + 1);
-        rhs.erase(0, rhs.find_first_not_of(" 	"));
-        rhs.erase(rhs.find_last_not_of(" 	") + 1);
-        if (arrays.find(lhs) == arrays.end() || arrays.find(rhs) == arrays.end()) {
-            std::cerr << "ERROR: DOT matrix not found: " << lhs << ", " << rhs << std::endl;
-            return;
-        }
-        const ArrayInfo& a = arrays[lhs];
-        const ArrayInfo& b = arrays[rhs];
-        if (a.dimensions != 2 || b.dimensions != 2 || a.shape[1] != b.shape[0]) {
-            std::cerr << "ERROR: DOT requires 2D matrices with shape (m,n)*(n,k)
-";
-            return;
-        }
-
-        ArrayInfo result;
-        result.dimensions = 2;
-        result.shape = { a.shape[0], b.shape[1] };
-        result.data.resize(result.shape[0] * result.shape[1]);
-
-        for (size_t i = 0; i < a.shape[0]; ++i) {
-            for (size_t j = 0; j < b.shape[1]; ++j) {
-                double sum = 0.0;
-                for (size_t k = 0; k < a.shape[1]; ++k) {
-                    sum += a.data[i * a.shape[1] + k] * b.data[k * b.shape[1] + j];
-                }
-                result.data[i * result.shape[1] + j] = sum;
-            }
-        }
-
-        arrays[target] = result;
-        return;
-    }
-
-if (expr.find("DETERMINANT(") == 0) {
+    if (expr.find("DETERMINANT(") == 0) {
         size_t open = expr.find("(");
         size_t close = expr.find(")");
         std::string source = expr.substr(open + 1, close - open - 1);
@@ -1936,6 +1871,7 @@ if (expr.find("DETERMINANT(") == 0) {
         arrays[target] = arrays[token1];
     }
 }
+
 
 
 double determinant(const std::vector<double>& mat, int n) {
