@@ -95,6 +95,45 @@ struct IdentifierReturn {
 
 long long currentline;  //current line we are working on.
 
+
+//
+//==================================================================================
+//    MAT Support functions
+//
+
+
+void sparseTrim(ArrayInfo& matrix) {
+    for (auto it = matrix.sparse.begin(); it != matrix.sparse.end(); ) {
+        if (std::abs(it->second) < 1e-12) it = matrix.sparse.erase(it);
+        else ++it;
+    }
+}
+
+double sparseSum(const ArrayInfo& matrix) {
+    double total = 0.0;
+    for (const auto& [_, val] : matrix.sparse) total += val;
+    return total;
+}
+
+void sparseMultiplyScalar(ArrayInfo& matrix, double scalar) {
+    for (auto& [_, val] : matrix.sparse) val *= scalar;
+}
+
+ArrayInfo sparseMask(const ArrayInfo& source, const ArrayInfo& mask) {
+    ArrayInfo result = source;
+    result.sparse.clear();
+    for (const auto& [key, val] : source.sparse) {
+        if (mask.sparse.count(key) && std::abs(mask.sparse.at(key)) > 1e-12)
+            result.sparse[key] = val;
+    }
+    return result;
+}
+
+//
+//=======================================================================================
+//   inline functsupport
+//
+
 IdentifierReturn evaluateFunction(const std::string &name,
                                   const std::vector<ArgsInfo> &args) {
   IdentifierReturn temp;
