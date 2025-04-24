@@ -129,6 +129,51 @@ ArrayInfo sparseMask(const ArrayInfo& source, const ArrayInfo& mask) {
     return result;
 }
 
+// Helper to parse index string like "A(1,2)" into name and index vector
+bool parseIndexedArray(const std::string& token, std::string& name, std::vector<int>& indices) {
+    size_t open = token.find('(');
+    size_t close = token.find(')');
+    if (open == std::string::npos || close == std::string::npos || close < open) return false;
+    name = token.substr(0, open);
+    std::string indexPart = token.substr(open + 1, close - open - 1);
+    std::istringstream iss(indexPart);
+    std::string val;
+    while (std::getline(iss, val, ',')) {
+        indices.push_back(std::stoi(val));
+    }
+    return true;
+}
+
+// Retrieve numeric or string from sparse matrix
+ArgsInfo getSparseValue(const std::string& name, const std::vector<int>& idx) {
+    ArgsInfo result;
+    if (arrays.count(name)) {
+        if (arrays[name].sparse.count(idx)) {
+            result.d = arrays[name].sparse.at(idx);
+            result.isstring = false;
+        } else if (arrays[name].stringSparse.count(idx)) {
+            result.s = arrays[name].stringSparse.at(idx);
+            result.isstring = true;
+        } else {
+            result.d = 0.0;
+            result.s = "";
+            result.isstring = false;
+        }
+    }
+    return result;
+}
+
+// Assign value to sparse matrix
+void setSparseValue(const std::string& name, const std::vector<int>& idx, const ArgsInfo& value) {
+    if (!arrays.count(name)) {
+        arrays[name].dimensions = idx.size();
+    }
+    if (value.isstring) {
+        arrays[name].stringSparse[idx] = value.s;
+    } else {
+        arrays[name].sparse[idx] = value.d;
+    }
+}
 //
 //=======================================================================================
 //   inline functsupport
