@@ -9,6 +9,55 @@
 #include <string>
 #include <vector>
 
+//
+//--------------------------------------------------------------------------------
+//             prototypes
+//
+
+void evaluateMATExpression(const std::string& target, const std::string& expression);
+void executeBEEP(const std::string &);
+void executeBEEP(const std::string &);
+void executeCLOSE(const std::string& line);
+void executeDEF(const std::string &);
+void executeDEF(const std::string &);}
+void executeDIM(const std::string &line);
+void executeFOR(const std::string &line);
+void executeFORMAT(const std::string &);
+void executeGO(const std::string &line);
+void executeGOSUB(const std::string &line);
+void executeIF(const std::string &);
+void executeINPUT(const std::string &line);
+void executeINPUTFILE(const std::string& line);
+void executeLET(const std::string& line);
+void executeMAT(const std::string& line);
+void executeMATPRINT(const std::string& line);
+void executeMATPRINTFILE(const std::string& line);
+void executeMATREAD(const std::string& line);
+void executeON(const std::string &line);
+void executeOPEN(const std::string& line);
+void executePRINT(const std::string& line);
+void executePRINTFILE(const std::string& line);
+void executePRINTFILEUSING(const std::string& line);
+void executeREM(const std::string &);
+void executeREM(const std::string &);}
+void executeREPEAT(const std::string&);
+void executeRETURN(const std::string &);
+void executeSEED(const std::string& line);
+void executeSTOP(const std::string &);
+void executeSTOP(const std::string &);
+void executeUNTIL(const std::string& line);
+void executeWEND(const std::string&);
+void executeWHILE(const std::string& line);
+void setSparseValue(const std::string& name, const std::vector<int>& idx, const ArgsInfo& value);
+void sparseMultiplyScalar(ArrayInfo& matrix, double scalar);
+void sparseTrim(ArrayInfo& matrix);
+
+
+//
+//--------------------------------------------------------------------------------
+//            Global Variables, structs, etc & helper functions.
+//
+
 enum VariableType {
   VT_UNKNOWN,
   VT_TEXT,
@@ -174,6 +223,247 @@ void setSparseValue(const std::string& name, const std::vector<int>& idx, const 
         arrays[name].sparse[idx] = value.d;
     }
 }
+
+
+bool invertMatrix(const std::vector<double>& input, std::vector<double>& output, int size) {
+    output = input;
+    std::vector<double> identity(size * size, 0.0);
+    for (int i = 0; i < size; ++i) identity[i * size + i] = 1.0;
+
+    for (int col = 0; col < size; ++col) {
+        double diag = output[col * size + col];
+        if (std::abs(diag) < 1e-12) return false;
+
+        for (int j = 0; j < size; ++j) {
+            output[col * size + j] /= diag;
+            identity[col * size + j] /= diag;
+        }
+
+        for (int row = 0; row < size; ++row) {
+            if (row != col) {
+                double factor = output[row * size + col];
+                for (int j = 0; j < size; ++j) {
+                    output[row * size + j] -= factor * output[col * size + j];
+                    identity[row * size + j] -= factor * identity[col * size + j];
+                }
+            }
+        }
+    }
+
+    output = identity;
+    return true;
+}
+
+
+double determinant(const std::vector<double>& mat, int n) {
+    if (n == 1) return mat[0];
+    if (n == 2) return mat[0] * mat[3] - mat[1] * mat[2];
+
+    double det = 0.0;
+    std::vector<double> submat((n - 1) * (n - 1));
+    for (int col = 0; col < n; ++col) {
+        int subi = 0;
+        for (int i = 1; i < n; ++i) {
+            int subj = 0;
+            for (int j = 0; j < n; ++j) {
+                if (j == col) continue;
+                submat[subi * (n - 1) + subj] = mat[i * n + j];
+                subj++;
+            }
+            subi++;
+        }
+        double sign = (col % 2 == 0) ? 1.0 : -1.0;
+        det += sign * mat[col] * determinant(submat, n - 1);
+    }
+    return det;
+}
+
+
+
+void evaluateMATExpression(const std::string& target, const std::string& expression) {
+    if (expr.find("DETERMINANT(") == 0) {
+        size_t open = expr.find("(");
+        size_t close = expr.find(")");
+        std::string source = expr.substr(open + 1, close - open - 1);
+        if (arrays.find(source) == arrays.end()) {
+            std::cerr << "ERROR: Matrix not found: " << source << std::endl;
+            return;
+        }
+        const ArrayInfo& mat = arrays[source];
+        if (mat.dimensions != 2 || mat.shape[0] != mat.shape[1]) {
+            std::cerr << "ERROR: DETERMINANT requires a square 2D matrix.";
+            return;
+        }
+        double resultVal = determinant(mat.data, mat.shape[0]);
+        ArrayInfo result;
+        result.dimensions = 2;
+        result.shape = {1, 1};
+        result.data = { resultVal };
+        arrays[target] = result;
+        return;
+    }
+
+    std::string expr = expression;
+    expr.erase(0, expr.find_first_not_of(" 	"));
+
+    if (expr.find("INV(") == 0) {
+        size_t open = expr.find("(");
+        size_t close = expr.find(")");
+        std::string source = expr.substr(open + 1, close - open - 1);
+        if (arrays.find(source) == arrays.end()) {
+            std::cerr << "ERROR: INV source matrix not found: " << source << std::endl;
+            return;
+        }
+
+        const ArrayInfo& src = arrays[source];
+        if (src.dimensions != 2 || src.shape.size() != 2 || src.shape[0] != src.shape[1]) {
+            std::cerr << "ERROR: INV requires a square 2D matrix.";
+            return;
+        }
+
+        ArrayInfo result;
+        result.dimensions = 2;
+        result.shape = src.shape;
+
+        if (!invertMatrix(src.data, result.data, src.shape[0])) {
+            std::cerr << "ERROR: INV matrix is singular or not invertible.";
+            return;
+        }
+
+        arrays[target] = result;
+        return;
+    }
+
+    if (expr.find("TRANS(") == 0) {
+        size_t open = expr.find("(");
+        size_t close = expr.find(")");
+        std::string source = expr.substr(open + 1, close - open - 1);
+        if (arrays.find(source) == arrays.end()) {
+            std::cerr << "ERROR: TRANS source matrix not found: " << source << std::endl;
+            return;
+        }
+        const ArrayInfo& src = arrays[source];
+        if (src.dimensions != 2 || src.shape.size() != 2) {
+            std::cerr << "ERROR: TRANS requires a 2D matrix." << std::endl;
+            return;
+        }
+
+        ArrayInfo result;
+        result.dimensions = 2;
+        result.shape = { src.shape[1], src.shape[0] };
+        result.data.resize(src.data.size());
+
+        for (size_t r = 0; r < src.shape[0]; ++r) {
+            for (size_t c = 0; c < src.shape[1]; ++c) {
+                result.data[c * src.shape[0] + r] = src.data[r * src.shape[1] + c];
+            }
+        }
+
+        arrays[target] = result;
+        return;
+    }
+
+    std::istringstream iss(expr);
+    std::string token1, op, token2;
+
+    std::istringstream iss_check(expr);
+    std::string left, op, right;
+    iss_check >> left >> op >> right;
+    if (op == "*" && arrays.find(left) == arrays.end() && arrays.find(right) != arrays.end()) {
+        // SCALAR * MATRIX
+        double scalar = std::stod(left);
+        const ArrayInfo& mat = arrays[right];
+        ArrayInfo result = mat;
+        if (mat.dimensions >= 4) {
+            for (auto& [key, val] : result.sparse) {
+                val *= scalar;
+            }
+        } else {
+            for (auto& val : result.data) {
+                val *= scalar;
+            }
+        }
+        arrays[target] = result;
+        return;
+    } else if (op == "*" && arrays.find(left) != arrays.end() && arrays.find(right) == arrays.end()) {
+        // MATRIX * SCALAR
+        double scalar = std::stod(right);
+        const ArrayInfo& mat = arrays[left];
+        ArrayInfo result = mat;
+        if (mat.dimensions >= 4) {
+            for (auto& [key, val] : result.sparse) {
+                val *= scalar;
+            }
+        } else {
+            for (auto& val : result.data) {
+                val *= scalar;
+            }
+        }
+        arrays[target] = result;
+        return;
+    }
+
+    iss >> token1;
+
+    if (iss >> op >> token2) {
+        if (arrays.find(token1) == arrays.end() || arrays.find(token2) == arrays.end()) {
+            std::cerr << "ERROR: One or both matrices not defined: " << token1 << ", " << token2 << std::endl;
+            return;
+        }
+
+        const ArrayInfo& a = arrays[token1];
+        const ArrayInfo& b = arrays[token2];
+
+        if (a.dimensions != b.dimensions || a.shape != b.shape) {
+            std::cerr << "ERROR: Dimension mismatch in MAT operation." << std::endl;
+            return;
+        }
+
+        ArrayInfo result;
+        result.dimensions = a.dimensions;
+        result.shape = a.shape;
+
+        if (a.dimensions >= 4) {
+            for (const auto& entry : a.sparse) {
+                if (b.sparse.find(entry.first) != b.sparse.end()) {
+                    if (op == "+") {
+                        result.sparse[entry.first] = entry.second + b.sparse.at(entry.first);
+                    } else if (op == "-") {
+                        result.sparse[entry.first] = entry.second - b.sparse.at(entry.first);
+                    } else if (op == "*") {
+                        result.sparse[entry.first] = entry.second * b.sparse.at(entry.first);
+                    } else {
+                        std::cerr << "ERROR: Unsupported operator " << op << " in sparse matrix." << std::endl;
+                        return;
+                    }
+                }
+            }
+        } else {
+            result.data.resize(a.data.size());
+            for (size_t i = 0; i < result.data.size(); ++i) {
+                if (op == "+") {
+                    result.data[i] = a.data[i] + b.data[i];
+                } else if (op == "-") {
+                    result.data[i] = a.data[i] - b.data[i];
+                } else if (op == "*") {
+                    result.data[i] = a.data[i] * b.data[i];
+                } else {
+                    std::cerr << "ERROR: Unsupported operator " << op << " in dense matrix." << std::endl;
+                    return;
+                }
+            }
+        }
+
+        arrays[target] = result;
+    } else {
+        if (arrays.find(token1) == arrays.end()) {
+            std::cerr << "ERROR: Matrix not defined: " << token1 << std::endl;
+            return;
+        }
+        arrays[target] = arrays[token1];
+    }
+}
+
 //
 //=======================================================================================
 //   inline functsupport
@@ -1422,11 +1712,70 @@ void executeMAT(const std::string& line) {
     evaluateMATExpression(target, expression);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Reads DATA statements into a previously DIM’d matrix (numeric only).
+// Usage in BASIC:  MAT READ A
+// It will collect all DATA values in program order and load them into A.
+
 void executeMATREAD(const std::string& line) {
     std::istringstream iss(line);
-    std::string cmd, readWord, arrayName;
-    iss >> cmd >> readWord >> arrayName;
-    std::cout << "[MAT STUB] MAT READ " << arrayName << std::endl;
+    std::string cmd, name;
+    iss >> cmd >> name;  // cmd == "MAT", next token is "READ", then name?
+    // Some implementations write "MAT READ A". If yours uses that form:
+    if (name == "READ") {
+        iss >> name;
+    }
+
+    auto it = arrays.find(name);
+    if (it == arrays.end()) {
+        std::cerr << "ERROR: MAT READ on undefined matrix: " << name << std::endl;
+        return;
+    }
+    ArrayInfo &mat = it->second;
+
+    // Compute total elements = product of dimensions
+    size_t total = 1;
+    for (int d : mat.shape) {
+        total *= d;
+    }
+
+    // Gather all DATA values
+    std::vector<double> values;
+    for (const auto &p : programSource) {
+        std::istringstream ds(p.second);
+        std::string kw;
+        ds >> kw;
+        if (kw == "DATA") {
+            std::string rest;
+            std::getline(ds, rest);
+            std::stringstream vs(rest);
+            std::string token;
+            while (std::getline(vs, token, ',')) {
+                // trim
+                token.erase(0, token.find_first_not_of(" \t"));
+                token.erase(token.find_last_not_of(" \t") + 1);
+                try {
+                    values.push_back(std::stod(token));
+                } catch (...) {
+                    values.push_back(0.0);
+                }
+            }
+        }
+    }
+
+    if (values.size() < total) {
+        std::cerr << "ERROR: MAT READ, not enough DATA values ("
+                  << values.size() << " available for "
+                  << total << " elements)" << std::endl;
+        return;
+    }
+
+    // Load into dense storage (row-major)
+    mat.data.clear();
+    mat.data.reserve(total);
+    for (size_t i = 0; i < total; ++i) {
+        mat.data.push_back(values[i]);
+    }
 }
 
 void executeMATPRINT(const std::string& line) {
@@ -1591,7 +1940,8 @@ enum StatementType {
   ST_WEND,
   ST_REPEAT,
   ST_UNTIL,
-  ST_SEED
+  ST_SEED,
+  ST_MATREAD
 };
 
 StatementType identifyStatement(const std::string &keyword) {
@@ -1655,6 +2005,8 @@ StatementType identifyStatement(const std::string &keyword) {
     return ST_UNTIL;
   if (keyword == "SEED")
     return ST_SEED;
+  if (keyword=="MAT READ”)
+    return ST_MATREAD;
   return ST_UNKNOWN;
 }
 
@@ -1761,251 +2113,11 @@ void runInterpreter(const std::map<int, std::string> &programSource) {
     case ST_SEED:
       executeSEED(it->second);
       break;
+    case ST_MATREAD: executeMATREAD(it->second); break;
+
     default:
       return "Unhandled statement: " << it->second << std::endl;
     }
   }
 }
 
-
-bool invertMatrix(const std::vector<double>& input, std::vector<double>& output, int size) {
-    output = input;
-    std::vector<double> identity(size * size, 0.0);
-    for (int i = 0; i < size; ++i) identity[i * size + i] = 1.0;
-
-    for (int col = 0; col < size; ++col) {
-        double diag = output[col * size + col];
-        if (std::abs(diag) < 1e-12) return false;
-
-        for (int j = 0; j < size; ++j) {
-            output[col * size + j] /= diag;
-            identity[col * size + j] /= diag;
-        }
-
-        for (int row = 0; row < size; ++row) {
-            if (row != col) {
-                double factor = output[row * size + col];
-                for (int j = 0; j < size; ++j) {
-                    output[row * size + j] -= factor * output[col * size + j];
-                    identity[row * size + j] -= factor * identity[col * size + j];
-                }
-            }
-        }
-    }
-
-    output = identity;
-    return true;
-}
-
-
-void evaluateMATExpression(const std::string& target, const std::string& expression) {
-    if (expr.find("DETERMINANT(") == 0) {
-        size_t open = expr.find("(");
-        size_t close = expr.find(")");
-        std::string source = expr.substr(open + 1, close - open - 1);
-        if (arrays.find(source) == arrays.end()) {
-            std::cerr << "ERROR: Matrix not found: " << source << std::endl;
-            return;
-        }
-        const ArrayInfo& mat = arrays[source];
-        if (mat.dimensions != 2 || mat.shape[0] != mat.shape[1]) {
-            std::cerr << "ERROR: DETERMINANT requires a square 2D matrix.
-";
-            return;
-        }
-        double resultVal = determinant(mat.data, mat.shape[0]);
-        ArrayInfo result;
-        result.dimensions = 2;
-        result.shape = {1, 1};
-        result.data = { resultVal };
-        arrays[target] = result;
-        return;
-    }
-
-    std::string expr = expression;
-    expr.erase(0, expr.find_first_not_of(" 	"));
-
-    if (expr.find("INV(") == 0) {
-        size_t open = expr.find("(");
-        size_t close = expr.find(")");
-        std::string source = expr.substr(open + 1, close - open - 1);
-        if (arrays.find(source) == arrays.end()) {
-            std::cerr << "ERROR: INV source matrix not found: " << source << std::endl;
-            return;
-        }
-
-        const ArrayInfo& src = arrays[source];
-        if (src.dimensions != 2 || src.shape.size() != 2 || src.shape[0] != src.shape[1]) {
-            std::cerr << "ERROR: INV requires a square 2D matrix.
-";
-            return;
-        }
-
-        ArrayInfo result;
-        result.dimensions = 2;
-        result.shape = src.shape;
-
-        if (!invertMatrix(src.data, result.data, src.shape[0])) {
-            std::cerr << "ERROR: INV matrix is singular or not invertible.
-";
-            return;
-        }
-
-        arrays[target] = result;
-        return;
-    }
-
-    if (expr.find("TRANS(") == 0) {
-        size_t open = expr.find("(");
-        size_t close = expr.find(")");
-        std::string source = expr.substr(open + 1, close - open - 1);
-        if (arrays.find(source) == arrays.end()) {
-            std::cerr << "ERROR: TRANS source matrix not found: " << source << std::endl;
-            return;
-        }
-        const ArrayInfo& src = arrays[source];
-        if (src.dimensions != 2 || src.shape.size() != 2) {
-            std::cerr << "ERROR: TRANS requires a 2D matrix." << std::endl;
-            return;
-        }
-
-        ArrayInfo result;
-        result.dimensions = 2;
-        result.shape = { src.shape[1], src.shape[0] };
-        result.data.resize(src.data.size());
-
-        for (size_t r = 0; r < src.shape[0]; ++r) {
-            for (size_t c = 0; c < src.shape[1]; ++c) {
-                result.data[c * src.shape[0] + r] = src.data[r * src.shape[1] + c];
-            }
-        }
-
-        arrays[target] = result;
-        return;
-    }
-
-    std::istringstream iss(expr);
-    std::string token1, op, token2;
-
-    std::istringstream iss_check(expr);
-    std::string left, op, right;
-    iss_check >> left >> op >> right;
-    if (op == "*" && arrays.find(left) == arrays.end() && arrays.find(right) != arrays.end()) {
-        // SCALAR * MATRIX
-        double scalar = std::stod(left);
-        const ArrayInfo& mat = arrays[right];
-        ArrayInfo result = mat;
-        if (mat.dimensions >= 4) {
-            for (auto& [key, val] : result.sparse) {
-                val *= scalar;
-            }
-        } else {
-            for (auto& val : result.data) {
-                val *= scalar;
-            }
-        }
-        arrays[target] = result;
-        return;
-    } else if (op == "*" && arrays.find(left) != arrays.end() && arrays.find(right) == arrays.end()) {
-        // MATRIX * SCALAR
-        double scalar = std::stod(right);
-        const ArrayInfo& mat = arrays[left];
-        ArrayInfo result = mat;
-        if (mat.dimensions >= 4) {
-            for (auto& [key, val] : result.sparse) {
-                val *= scalar;
-            }
-        } else {
-            for (auto& val : result.data) {
-                val *= scalar;
-            }
-        }
-        arrays[target] = result;
-        return;
-    }
-
-    iss >> token1;
-
-    if (iss >> op >> token2) {
-        if (arrays.find(token1) == arrays.end() || arrays.find(token2) == arrays.end()) {
-            std::cerr << "ERROR: One or both matrices not defined: " << token1 << ", " << token2 << std::endl;
-            return;
-        }
-
-        const ArrayInfo& a = arrays[token1];
-        const ArrayInfo& b = arrays[token2];
-
-        if (a.dimensions != b.dimensions || a.shape != b.shape) {
-            std::cerr << "ERROR: Dimension mismatch in MAT operation." << std::endl;
-            return;
-        }
-
-        ArrayInfo result;
-        result.dimensions = a.dimensions;
-        result.shape = a.shape;
-
-        if (a.dimensions >= 4) {
-            for (const auto& entry : a.sparse) {
-                if (b.sparse.find(entry.first) != b.sparse.end()) {
-                    if (op == "+") {
-                        result.sparse[entry.first] = entry.second + b.sparse.at(entry.first);
-                    } else if (op == "-") {
-                        result.sparse[entry.first] = entry.second - b.sparse.at(entry.first);
-                    } else if (op == "*") {
-                        result.sparse[entry.first] = entry.second * b.sparse.at(entry.first);
-                    } else {
-                        std::cerr << "ERROR: Unsupported operator " << op << " in sparse matrix." << std::endl;
-                        return;
-                    }
-                }
-            }
-        } else {
-            result.data.resize(a.data.size());
-            for (size_t i = 0; i < result.data.size(); ++i) {
-                if (op == "+") {
-                    result.data[i] = a.data[i] + b.data[i];
-                } else if (op == "-") {
-                    result.data[i] = a.data[i] - b.data[i];
-                } else if (op == "*") {
-                    result.data[i] = a.data[i] * b.data[i];
-                } else {
-                    std::cerr << "ERROR: Unsupported operator " << op << " in dense matrix." << std::endl;
-                    return;
-                }
-            }
-        }
-
-        arrays[target] = result;
-    } else {
-        if (arrays.find(token1) == arrays.end()) {
-            std::cerr << "ERROR: Matrix not defined: " << token1 << std::endl;
-            return;
-        }
-        arrays[target] = arrays[token1];
-    }
-}
-
-
-
-double determinant(const std::vector<double>& mat, int n) {
-    if (n == 1) return mat[0];
-    if (n == 2) return mat[0] * mat[3] - mat[1] * mat[2];
-
-    double det = 0.0;
-    std::vector<double> submat((n - 1) * (n - 1));
-    for (int col = 0; col < n; ++col) {
-        int subi = 0;
-        for (int i = 1; i < n; ++i) {
-            int subj = 0;
-            for (int j = 0; j < n; ++j) {
-                if (j == col) continue;
-                submat[subi * (n - 1) + subj] = mat[i * n + j];
-                subj++;
-            }
-            subi++;
-        }
-        double sign = (col % 2 == 0) ? 1.0 : -1.0;
-        det += sign * mat[col] * determinant(submat, n - 1);
-    }
-    return det;
-}
