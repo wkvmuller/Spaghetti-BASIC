@@ -507,7 +507,7 @@ IdentifierReturn evaluateFunction(const std::string &name,
   if (name == "SIN" || name == "COS" || name == "TAN" || name == "SQR" ||
           name == "STRING$" || name == "LOG" || name == "LOG10" ||
           name == "CLOG" || name == "EXP" || name == "INT" || name == "ROUND" ||
-          name == "FLOOR" || name == "CEIL" | name == "RND" || name = "DET" )
+          name == "FLOOR" || name == "CEIL" | name == "RND" || name == "DET" )
     if (args[0].isstring) {
       std::cerr << "Error on " << name
                 << " passing a string where number expected [" << args[0].s
