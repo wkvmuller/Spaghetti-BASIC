@@ -139,7 +139,7 @@
                  | DEG2RAD | RAD2DEG
                  | ASCII | VALUE | TEST$ | POW
                  | ROUND | FLOOR | CEIL
-                 | TIME
+                 | TIME  | DET
 
 <stringfunction> ::= LEFT$ | RIGHT$ | MID$ | LEN$ | CHR$ | STRING$ | TIME$ | DATE$
 

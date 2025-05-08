@@ -85,6 +85,7 @@ private:
     return input.substr(start, pos - start);
   }
 
+<<<<<<< HEAD
   IdentifierReturn parsePrimary() {
     IdentifierReturn valreturned;
           std::vector<ArgsInfo> args;  
@@ -128,6 +129,102 @@ private:
     evalueatefunctionreturn.d = parseNumber();
     return evalueatefunctionreturn;
   }
+=======
+IdentifierReturn Parser::parsePrimary() {
+    IdentifierReturn valreturned;
+    skipWhitespace();
+
+    // 1) String literal: "..."
+    if (peek() == '"') {
+        // consume opening quote
+        get();
+        std::string s;
+        // accumulate until closing quote or end
+        while (pos < input.length() && input[pos] != '"') {
+            s += input[pos++];
+        }
+        // consume closing quote if present
+        if (peek() == '"') get();
+
+        valreturned.isstring = true;
+        valreturned.s        = s;
+        valreturned.d        = 0.0;
+        return valreturned;
+    }
+
+    // 2) Parenthesized expression: ( expr )
+    if (peek() == '(') {
+        get();  // consume '('
+        double num = parseExpression();
+        if (get() != ')')
+            throw std::runtime_error("Expected ')' in expression");
+        valreturned.isstring = false;
+        valreturned.d        = num;
+        return valreturned;
+    }
+
+    // 3) Identifier or function call
+    if (std::isalpha(peek())) {
+        // parse identifier (may end with $ for string variables)
+        size_t start = pos;
+        while (pos < input.length() &&
+               (std::isalnum(input[pos]) || input[pos] == '$'))
+            ++pos;
+        std::string name = input.substr(start, pos - start);
+
+        // function call?
+        if (peek() == '(') {
+            // consume '('
+            get();
+            std::vector<ArgsInfo> args;
+            if (peek() != ')') {
+                // parse comma‐separated expressions
+                do {
+                    double argval = parseExpression();
+                    args.push_back(makeArgsInfo(linenumber, name, false, "", argval));
+                } while (peek() == ',' && get());
+            }
+            if (get() != ')')
+                throw std::runtime_error("Expected ')' after function arguments");
+
+            // dispatch to numeric or string function evaluator
+            if (name.back() == '$') {
+                // string‐returning function
+                IdentifierReturn tmp = evaluateStringFunction(name, args);
+                return tmp;
+            } else {
+                IdentifierReturn tmp = evaluateFunction(name, args);
+                return tmp;
+            }
+        }
+
+        // not a function: variable lookup
+        auto it = variables.find(name);
+        if (it != variables.end()) {
+            const VarInfo &v = it->second;
+            if (v.vT == VT_STRING) {
+                valreturned.isstring = true;
+                valreturned.s        = v.s;
+                valreturned.d        = 0.0;
+            } else {
+                valreturned.isstring = false;
+                valreturned.d        = v.d;
+            }
+        } else {
+            // undefined scalar: default to zero or empty
+            valreturned.isstring = (name.back() == '$');
+            valreturned.s        = "";
+            valreturned.d        = 0.0;
+        }
+        return valreturned;
+    }
+
+    // 4) Numeric literal
+    valreturned.isstring = false;
+    valreturned.d        = parseNumber();
+    return valreturned;
+}
+>>>>>>> ace41c3 (update pclasss parse...)
 
 
 double parseNumber() {
