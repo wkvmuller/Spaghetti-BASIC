@@ -105,6 +105,52 @@ long long currentline; // current line we are working on.
 
 std::map<int, std::string> programSource,proghramSourceMaster;
 
+<<<<<<< HEAD
+=======
+/// Fill a square matrix with 1’s on the diagonal, 0’s elsewhere.
+
+
+void executeMATIDENTITY(const std::string& line) {
+    // Expect syntax:  MAT IDENTITY(A)
+    size_t open = line.find('(');
+    size_t close = line.find(')', open);
+    if (open == std::string::npos || close == std::string::npos) {
+        std::cerr << "ERROR: Malformed MAT IDENTITY statement\n";
+        return;
+    }
+    std::string name = line.substr(open + 1, close - open - 1);
+
+    auto it = arrays.find(name);
+    if (it == arrays.end()) {
+        std::cerr << "ERROR: MAT IDENTITY on undefined matrix " << name << "\n";
+        return;
+    }
+    ArrayInfo& mat = it->second;
+
+    // must be 2D and square
+    if (mat.shape.size() != 2 || mat.shape[0] != mat.shape[1]) {
+        std::cerr << "ERROR: MAT IDENTITY requires a square 2D matrix: " << name << "\n";
+        return;
+    }
+    int n = mat.shape[0];
+
+    // numeric dense
+    if (!mat.data.empty()) {
+        for (int i = 0; i < n; ++i)
+            for (int j = 0; j < n; ++j)
+                mat.data[i * n + j] = (i == j ? 1.0 : 0.0);
+    }
+    // numeric sparse
+    else {
+        mat.sparse.clear();
+        for (int i = 0; i < n; ++i)
+            mat.sparse[{i, i}] = 1.0;
+    }
+
+    // clear any leftover string entries
+    mat.stringSparse.clear();
+}
+>>>>>>> ace41c3 (update pclasss parse...)
 
 // ----- stub helpers ---------------------------------------------------------
 void matAdd     (const std::string& dst,const std::string& a,const std::string& b){std::cerr<<"[STUB] matAdd("<<dst<<","<<a<<","<<b<<")\n";}
@@ -389,7 +435,9 @@ void executeMATPRINTFILE(const std::string &line) {
   std::getline(iss, rest);
   std::cout << "[MAT STUB] MAT PRINT #" << filenum << ", " << rest << std::endl;
 }
+<<<<<<< HEAD
 
+<<<<<<< HEAD
 void executeMAT(const std::string &line) {
   std::istringstream iss(line);
   std::string cmd, sub;
@@ -419,6 +467,95 @@ void executeMAT(const std::string &line) {
     evaluateMATExpression(target, expr);
   }
 }
+=======
+=======
+// ─── Hook it into the MAT dispatcher ──────────────────────────────────────────
+
+void void executeMAT(const std::string& line) {
+    std::istringstream iss(line);
+    std::string cmd, sub;
+    iss >> cmd >> sub;  // “MAT” and next token
+    const std::string& line) {
+    std::istringstream iss(line);
+    std::string cmd, sub;
+    iss >> cmd >> sub;  // cmd == "MAT", sub == next token
+
+    if (sub == "IDENTITY") {
+        executeMATIDENTITY(line);
+    }
+    else if (sub == "READ") {
+        executeMATREAD(line);
+    }
+    else if (sub == "PRINT") {
+        // MAT PRINT  …  could be console or file
+        // Peek past “PRINT”
+        iss >> std::ws;
+        if (iss.peek() == '#') {
+            // MAT PRINT #n, A, B…
+            executeMATPRINTFILE(line);
+        } else {
+            // MAT PRINT A, B…
+            executeMATPRINT(line);
+        }
+    }
+    else {
+        // MAT <target> = <expr>
+        std::string target = sub, eq;
+        iss >> eq;              // consume “=”
+        std::string expr;
+        std::getline(iss, expr);
+        expr.erase(0, expr.find_first_not_of(" \t"));
+        evaluateMATExpression(target, expr);
+    }
+}
+
+void executeMATREAD(const std::string& line) {
+    std::istringstream iss(line);
+    std::string cmd, readWord, name;
+    iss >> cmd >> readWord >> name;  // “MAT READ A”
+
+    if (!arrays.count(name)) {
+        std::cerr << "ERROR: MAT READ undefined matrix " << name << "\n";
+        return;
+    }
+    ArrayInfo& mat = arrays[name];
+
+    // Compute total elements
+    size_t total = 1;
+    for (int d : mat.shape) total *= d;
+
+    // Temp index vector
+    std::vector<int> idx(mat.shape.size());
+
+    // Fill row-major order
+    for (size_t n = 0; n < total; ++n) {
+        // Convert flat n → multidimensional idx[]
+        size_t rem = n;
+        for (int dim = int(mat.shape.size()) - 1; dim >= 0; --dim) {
+            idx[dim] = rem % mat.shape[dim];
+            rem /= mat.shape[dim];
+        }
+
+        // Fetch next DATA item
+        ArgsInfo v = getNextData();
+
+        // Assign into dense or sparse, numeric or string
+        if (!mat.data.empty()) {
+            // Dense numeric
+            mat.data[n] = v.isstring ? 0.0 : v.d;
+        } else {
+            // Sparse numeric
+            if (!v.isstring)
+                mat.sparse[idx] = v.d;
+        }
+        if (v.isstring) {
+            // Store string regardless of dense/sparse
+            mat.stringSparse[idx] = v.s;
+        }
+    }
+}
+>>>>>>> ace41c3 (update pclasss parse...)
+>>>>>>> 79fb27c (restarting interperter)
 
 //=======================================================================================
 //   inline functsupport
@@ -707,6 +844,7 @@ IdentifierReturn evaluateFunction(const std::string &name,
     double parse() {
       double result = parseExpression();
 
+<<<<<<< HEAD
       skipWhitespace();
       if (pos != input.length()) {
         throw std::runtime_error("Unexpected text after expression");
@@ -812,15 +950,126 @@ IdentifierReturn evaluateFunction(const std::string &name,
 
       // 3) Identifier or function call
       if (std::isalpha(peek())) {
+=======
+    skipWhitespace();
+    if (pos != input.length()) {
+      throw std::runtime_error("Unexpected text after expression");
+    }
+    return result;
+  }
+
+  void skipWhitespace() {
+    while (pos < input.length() && std::isspace(input[pos]))
+      ++pos;
+  }
+
+  char peek() {
+    skipWhitespace();
+    return pos < input.length() ? input[pos] : '\0';
+  }
+
+  char get() {
+    skipWhitespace();
+    return pos < input.length() ? input[pos++] : '\0';
+  }
+
+  double parseExpression() {
+    double value = parseTerm();
+    while (true) {
+      char op = peek();
+      if (op == '+' || op == '-') {
+        get();
+        double rhs = parseTerm();
+        value = (op == '+') ? value + rhs : value - rhs;
+      } else
+        break;
+    }
+    return value;
+  }
+
+  double parseTerm() {
+    double value = parseFactor();
+    while (true) {
+      char op = peek();
+      if (op == '*' || op == '/') {
+        get();
+        double rhs = parseFactor();
+        value = (op == '*') ? value * rhs : value / rhs;
+      } else
+        break;
+    }
+    return value;
+  }
+
+  double parseFactor() {
+    IdentifierReturn valreturned = parsePrimary();
+    double value = valreturned.d;
+    while (peek() == '^') {
+      get();
+      valreturned = parsePrimary();
+      value = std::pow(value, valreturned.d);
+    }
+    return value;
+  }
+
+  std::string parseIdentifier() {
+    size_t start = pos;
+    while (pos < input.length() &&
+           (std::isalnum(input[pos]) || input[pos] == '$'))
+      ++pos;
+    return input.substr(start, pos - start);
+  }
+
+IdentifierReturn Parser::parsePrimary() {
+    IdentifierReturn valreturned;
+    skipWhitespace();
+
+    // 1) String literal: "..."
+    if (peek() == '"') {
+        // consume opening quote
+        get();
+        std::string s;
+        // accumulate until closing quote or end
+        while (pos < input.length() && input[pos] != '"') {
+            s += input[pos++];
+        }
+        // consume closing quote if present
+        if (peek() == '"') get();
+
+        valreturned.isstring = true;
+        valreturned.s        = s;
+        valreturned.d        = 0.0;
+        return valreturned;
+    }
+
+    // 2) Parenthesized expression: ( expr )
+    if (peek() == '(') {
+        get();  // consume '('
+        double num = parseExpression();
+        if (get() != ')')
+            throw std::runtime_error("Expected ')' in expression");
+        valreturned.isstring = false;
+        valreturned.d        = num;
+        return valreturned;
+    }
+
+    // 3) Identifier or function call
+    if (std::isalpha(peek())) {
+>>>>>>> 79fb27c (restarting interperter)
         // parse identifier (may end with $ for string variables)
         size_t start = pos;
         while (pos < input.length() &&
                (std::isalnum(input[pos]) || input[pos] == '$'))
+<<<<<<< HEAD
           ++pos;
+=======
+            ++pos;
+>>>>>>> 79fb27c (restarting interperter)
         std::string name = input.substr(start, pos - start);
 
         // function call?
         if (peek() == '(') {
+<<<<<<< HEAD
           // consume '('
           get();
           std::vector<ArgsInfo> args;
@@ -843,11 +1092,36 @@ IdentifierReturn evaluateFunction(const std::string &name,
             IdentifierReturn tmp = evaluateFunction(name, args);
             return tmp;
           }
+=======
+            // consume '('
+            get();
+            std::vector<ArgsInfo> args;
+            if (peek() != ')') {
+                // parse comma‐separated expressions
+                do {
+                    double argval = parseExpression();
+                    args.push_back(makeArgsInfo(linenumber, name, false, "", argval));
+                } while (peek() == ',' && get());
+            }
+            if (get() != ')')
+                throw std::runtime_error("Expected ')' after function arguments");
+
+            // dispatch to numeric or string function evaluator
+            if (name.back() == '$') {
+                // string‐returning function
+                IdentifierReturn tmp = evaluateStringFunction(name, args);
+                return tmp;
+            } else {
+                IdentifierReturn tmp = evaluateFunction(name, args);
+                return tmp;
+            }
+>>>>>>> 79fb27c (restarting interperter)
         }
 
         // not a function: variable lookup
         auto it = variables.find(name);
         if (it != variables.end()) {
+<<<<<<< HEAD
           const VarInfo &v = it->second;
           if (v.vT == VT_STRING) {
             valreturned.isstring = true;
@@ -885,6 +1159,31 @@ IdentifierReturn evaluateFunction(const std::string &name,
                             const long long currentline) {
     return Parser(expr, currentline).parse();
   }
+=======
+            const VarInfo &v = it->second;
+            if (v.vT == VT_STRING) {
+                valreturned.isstring = true;
+                valreturned.s        = v.s;
+                valreturned.d        = 0.0;
+            } else {
+                valreturned.isstring = false;
+                valreturned.d        = v.d;
+            }
+        } else {
+            // undefined scalar: default to zero or empty
+            valreturned.isstring = (name.back() == '$');
+            valreturned.s        = "";
+            valreturned.d        = 0.0;
+        }
+        return valreturned;
+    }
+
+    // 4) Numeric literal
+    valreturned.isstring = false;
+    valreturned.d        = parseNumber();
+    return valreturned;
+}
+>>>>>>> 79fb27c (restarting interperter)
 
   //
   //----------------------------------------------------------------------------
@@ -1041,8 +1340,244 @@ void executeDIM(const std::string &line) {
     void executeSEED(const std::string &line) {
       std::cout << "Stub of SEED" << std::endl;
     }
+<<<<<<< HEAD
     void executeSTOP(const std::string &) {
       std::cout << "Stub of STOP" << std::endl;
+=======
+  }
+
+  if (index > static_cast<int>(lineNumbers.size())) {
+    std::cerr << "ERROR: ON " << mode << " index out of bounds: " << index
+              << std::endl;
+    return;
+  }
+
+  int targetLine = lineNumbers[index - 1];
+  if (!programSource.count(targetLine)) {
+    std::cerr << "ERROR: ON " << mode << " line " << targetLine
+              << " does not exist." << std::endl;
+    currentLineNumber = -1;
+    return;
+  }
+
+  if (mode == "GOTO") {
+    currentLineNumber = targetLine;
+  } else if (mode == "GOSUB") {
+    if (gosubStack.size() >= 15) {
+      std::cerr << "ERROR: GOSUB stack overflow in ON GOSUB" << std::endl;
+      currentLineNumber = -1;
+      return;
+    }
+    gosubStack.push(currentLineNumber);
+    currentLineNumber = targetLine;
+  } else {
+    std::cerr << "ERROR: Unsupported ON mode: " << mode << std::endl;
+  }
+}
+
+
+<<<<<<< HEAD
+void executeMAT(const std::string& line) {
+    std::istringstream iss(line);
+    std::string cmd, sub;
+    iss >> cmd >> sub;  // cmd == "MAT", sub == next token
+
+    if (sub == "READ") {
+        // MAT READ X
+        executeMATREAD(line);
+    }
+    else if (sub == "PRINT") {
+        // MAT PRINT  …  could be console or file
+        // Peek past “PRINT”
+        iss >> std::ws;
+        if (iss.peek() == '#') {
+            // MAT PRINT #n, A, B…
+            executeMATPRINTFILE(line);
+        } else {
+            // MAT PRINT A, B…
+            executeMATPRINT(line);
+        }
+    }
+    else {
+        // MAT <target> = <expr>
+        std::string target = sub, eq;
+        iss >> eq;              // consume “=”
+        std::string expr;
+        std::getline(iss, expr);
+        expr.erase(0, expr.find_first_not_of(" \t"));
+        evaluateMATExpression(target, expr);
+    }
+}
+
+void executeMATREAD(const std::string& line) {
+    std::istringstream iss(line);
+    std::string cmd, readWord, name;
+    iss >> cmd >> readWord >> name;  // “MAT READ A”
+
+    if (!arrays.count(name)) {
+        std::cerr << "ERROR: MAT READ undefined matrix " << name << "\n";
+        return;
+    }
+    ArrayInfo& mat = arrays[name];
+
+    // Compute total elements
+    size_t total = 1;
+    for (int d : mat.shape) total *= d;
+
+    // Temp index vector
+    std::vector<int> idx(mat.shape.size());
+
+    // Fill row-major order
+    for (size_t n = 0; n < total; ++n) {
+        // Convert flat n → multidimensional idx[]
+        size_t rem = n;
+        for (int dim = int(mat.shape.size()) - 1; dim >= 0; --dim) {
+            idx[dim] = rem % mat.shape[dim];
+            rem /= mat.shape[dim];
+        }
+
+        // Fetch next DATA item
+        ArgsInfo v = getNextData();
+
+        // Assign into dense or sparse, numeric or string
+        if (!mat.data.empty()) {
+            // Dense numeric
+            mat.data[n] = v.isstring ? 0.0 : v.d;
+        } else {
+            // Sparse numeric
+            if (!v.isstring)
+                mat.sparse[idx] = v.d;
+        }
+        if (v.isstring) {
+            // Store string regardless of dense/sparse
+            mat.stringSparse[idx] = v.s;
+        }
+    }
+}
+
+=======
+>>>>>>> ace41c3 (update pclasss parse...)
+
+
+std::string STRINGFORMAT(const std::string &s, const std::string &formatField) {
+  size_t width = formatField.size();
+  char align = formatField[0];
+  std::string result;
+
+  std::string clipped = s.length() > width ? s.substr(0, width) : s;
+
+  std::cout << STRINGFORMAT(s, field.content);
+  else std::cout << STRINGFORMAT(s, field.content);
+  else std::cout << STRINGFORMAT(s, field.content);
+  else {
+    result = clipped + std::string(width - clipped.length(), ' ');
+  }
+
+  return result;
+}
+
+// Splits a format string into numeric, string, and text fields
+std::vector<FormatField> parseFormatString(const std::string &fmt) {
+  std::vector<FormatField> fields;
+  std::string current;
+  FieldType currentType = FIELD_TEXT;
+
+  auto flush = [&]() {
+    if (!current.empty()) {
+      fields.push_back({currentType, current});
+      current.clear();
+    }
+  };
+
+  for (size_t i = 0; i < fmt.size(); ++i) {
+    char c = fmt[i];
+
+    if (c == '#' || c == '$') {
+      if (currentType != FIELD_NUMERIC) {
+        flush();
+        currentType = FIELD_NUMERIC;
+      }
+      current += c;
+    } else if (c == 'l' || c == 'r' || c == 'c') {
+      if (currentType != FIELD_STRING) {
+        flush();
+        currentType = FIELD_STRING;
+      }
+      current += c;
+    } else {
+      if (currentType != FIELD_TEXT) {
+        flush();
+        currentType = FIELD_TEXT;
+      }
+      current += c;
+    }
+  }
+
+  flush();
+  return fields;
+}
+
+void executeFORMAT(const std::string &) {
+  std::string formatString = formatDef.substr(pos + 2);
+  formatString.erase(0, formatString.find_first_not_of(" 	\""));
+  formatString.erase(formatString.find_last_not_of(" 	\"") + 1);
+
+  std::vector<FormatField> fields = parseFormatString(formatString);
+
+  std::vector<std::string> values;
+  std::stringstream ss(printItems);
+  std::string item;
+  while (std::getline(ss, item, ',')) {
+    item.erase(0, item.find_first_not_of(" 	"));
+    item.erase(item.find_last_not_of(" 	") + 1);
+    values.push_back(item);
+  }
+
+  size_t valIndex = 0;
+  for (const auto &field : fields) {
+    if (field.type == FIELD_TEXT) {
+      std::cout << field.content;
+    } else if (valIndex >= values.size()) {
+      std::cerr << "[ERR: missing value]";
+    } else {
+      const std::string &expr = values[valIndex];
+      if (field.type == FIELD_NUMERIC) {
+        double val = evaluateExpression(expr);
+        std::cout << val;
+      } else if (field.type == FIELD_STRING) {
+        std::string s = evaluateStringFunction("STRING$", {makeArgsInfo(expr)});
+        size_t width = field.content.size();
+        char align = field.content[0];
+        if (align != 'l' && align != 'r' && align != 'c')
+          align = 'l';
+        if (s.length() > width)
+          s = s.substr(0, width);
+        if (align == 'l')
+          std::cout << s << std::string(width - s.length(), ' ');
+        else if (align == 'r')
+          std::cout << std::string(width - s.length(), ' ') << s;
+        else
+          std::cout << STRINGFORMAT(s, field.content);
+      }
+      valIndex++;
+    }
+  }
+
+  std::cout << std::endl;
+}
+
+void executeBEEP(const std::string &) { std::cout << std::string("\a"); }
+
+
+void executeOPEN(const std::string& line) {
+    std::istringstream iss(line);
+    std::string cmd, filenameToken, forToken, modeToken, asToken, hashChannel;
+    iss >> cmd >> filenameToken >> forToken >> modeToken >> asToken >> hashChannel;
+
+    // Remove quotes from filename
+    if (filenameToken.front() == '\"' && filenameToken.back() == '\"') {
+        filenameToken = filenameToken.substr(1, filenameToken.length() - 2);
+>>>>>>> 79fb27c (restarting interperter)
     }
 
     void executeUNTIL(const std::string &line) {

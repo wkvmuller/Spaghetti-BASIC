@@ -80,7 +80,7 @@ IdentifierReturn evaluateFunction(const std::string &name,
   if (name == "SQR") {
     temp.d = std::sqrt(args[0].d);
     return temp;
-  }
+  // }
   if (name == "LOG") {
     temp.d = std::log(args[0].d);
     return temp;
@@ -113,7 +113,45 @@ IdentifierReturn evaluateFunction(const std::string &name,
     temp.d = static_cast<double>(std::pow(args[0].d, args[1].d));
     return temp;
   }
-  if (name == "RND") {
+  if (name == "RND") {temp.d = static_cast<double>(rand()) / static_cast<double>(RAND_MAX);}
+
+  if (name == "ASIN") {
+    temp.d = std::asin(args[0].d);
+    return temp;
+  }
+  if (name == "ACOS") {
+    temp.d = std::acos(args[0].d);
+    return temp;
+  }
+  if (name == "ATAN") {
+    temp.d = std::atan(args[0].d);
+    return temp;
+  }
+  if (name == "COT") {
+    temp.d = 1.0 / std::tan(args[0].d);
+    return temp;
+  }
+  if (name == "SEC") {
+    temp.d = 1.0 / std::cos(args[0].d);
+    return temp;
+  }
+  if (name == "CSC") {
+    temp.d = 1.0 / std::sin(args[0].d);
+    return temp;
+  }
+  if (name == "DEG2RAD") {
+    temp.d = args[0].d * M_PI / 180.0;
+    return temp;
+  }
+  if (name == "RAD2DEG") {
+    temp.d = args[0].d * 180.0 / M_PI;
+    return temp;
+  }
+  if (name == "DET") {
+    std::cerr << "DET() not implemented - placeholder only."<<__FILE__<<":"__LINE__ << std::endl;
+    temp.d = 0.0;
+    return temp;
+  }
     temp.d = rand() / RAND_MAX;
     return temp;
   }
