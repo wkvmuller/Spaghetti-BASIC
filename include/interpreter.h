@@ -1,9 +1,8 @@
 #ifndef INTERPRETER_H
 #define INTERPRETER_H
 
-#include <map>
-#include <string>
+#include "program_structure.h"
 
-void runInterpreter(const std::map<int, std::string>& programSource);
+void runInterpreter(PROGRAM_STRUCTURE& program);
 
 #endif // INTERPRETER_H

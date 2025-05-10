@@ -1,3 +1,4 @@
+#include "program_structure.h"
 #include <cctype>
 #include <cmath>
 #include <cstdlib>

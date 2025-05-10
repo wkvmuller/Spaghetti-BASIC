@@ -3,7 +3,7 @@ void executeBEEP(const std::string &) { std::cout << "Stub of BEEP" << std::endl
 void executeBEEP(const std::string &) { std::cout << "Stub of BEEP" << std::endl; }
 void executeCLOSE(const std::string& line) { std::cout << "Stub of CLOSE" << std::endl; }
 void executeDEF(const std::string &) { std::cout << "Stub of DEF" << std::endl; }
-void executeDEF(const std::string &);}
+void exACecuteDEF(const std::string &);}
 void executeDIM(const std::string &line) { std::cout << "Stub of DIM" << std::endl; }
 void executeFOR(const std::string &line) { std::cout << "Stub of FOR" << std::endl; }
 void executeFORMAT(const std::string &) { std::cout << "Stub of FORMAT" << std::endl; }
