@@ -1,5 +1,5 @@
-#include "fileio.h"
-#include <filesystem>
+#include <unistd.h>
+#include <limits.h>
 #include "interpreter.h"
 #include "syntax.h"
 #include <algorithm>
@@ -24,18 +24,76 @@ void handleRENUMBER(int newStart, int delta, int oldStart) {
     std::map<int, int> lineMapping;
     int nextLine = newStart;
 
-    for (const auto& [line, code] : program.programSource) {
-        if (line >= oldStart) {
-            lineMapping[line] = nextLine;
+    for (std::map<int, std::string>::const_iterator it = program.programSource.begin(); it != program.programSource.end(); ++it) {
+        if (it->first >= oldStart) {
+            lineMapping[it->first] = nextLine;
             nextLine += delta;
         } else {
-            lineMapping[line] = line;
+            lineMapping[it->first] = it->first;
         }
     }
 
-    for (const auto& [oldLine, code] : program.programSource) {
-        int newLine = lineMapping[oldLine];
-        std::string updatedCode = code;
+    for (const auto& [it2->first, it->second] : program.programSource) {
+        int newLine = lineMapping[it2->first];
+        std::string updatedCode = it->second;
+
+        std::regex re(R"(\b(?:GOTO|GOSUB|THEN|PRINT\s+USING)\s+(\d+)|ON\s+[^,]+?\s+GOTO\s+((?:\d+\s*,\s*)*\d+)|ON\s+[^,]+?\s+GOSUB\s+((?:\d+\s*,\s*)*\d+))", std::regex::icase);
+        updatedCode = std::regex_replace(updatedCode, re, [&](const std::smatch& m) {
+            if (m[1].matched) {
+                int oldRef = std::stoi(m[1].str());
+                if (lineMapping.count(oldRef)) {
+                    return m.str().substr(0, m.position(1) - m.position(0)) + std::to_string(lineMapping[oldRef]);
+                }
+            } else if (m[2].matched || m[3].matched) {  // ON GOTO / GOSUB
+        std::string lineList = m[2].matched ? m[2].str() : m[3].str();
+        std::stringstream ss(lineList);
+        std::string part, replaced;
+        while (std::getline(ss, part, ',')) {
+            int oldRef = std::stoi(part);
+            if (!replaced.empty()) replaced += ",";
+            replaced += lineMapping.count(oldRef) ? std::to_string(lineMapping[oldRef]) : part;
+        }
+        std::string full = m.str();
+        size_t keywordEnd = full.find_first_of("0123456789");
+        if (keywordEnd == std::string::npos) keywordEnd = 0;
+        return full.substr(0, keywordEnd) + replaced;
+    }
+                size_t keywordEnd = m.str().find_first_of("0123456789");
+                return m.str().substr(0, keywordEnd) + replaced;
+            }
+            return m.str();
+        });
+
+        newSource[newLine] = updatedCode;
+    }
+
+    program.programSource = std::move(newSource);
+    std::cout << "RENUMBER complete.\n";
+}}
+
+
+void handleRENUMBER(int newStart, int delta, int oldStart) {
+    if (program.programSource.empty()) {
+        std::cerr << "ERROR: No program loaded.\n";
+        return;
+    }
+
+    std::map<int, std::string> newSource;
+    std::map<int, int> lineMapping;
+    int nextLine = newStart;
+
+    for (std::map<int, std::string>::const_iterator it = program.programSource.begin(); it != program.programSource.end(); ++it) {
+        if (it->first >= oldStart) {
+            lineMapping[it->first] = nextLine;
+            nextLine += delta;
+        } else {
+            lineMapping[it->first] = it->first;
+        }
+    }
+
+    for (const auto& [it2->first, it->second] : program.programSource) {
+        int newLine = lineMapping[it2->first];
+        std::string updatedCode = it->second;
 
         std::regex re(R"(\b(?:GOTO|GOSUB|THEN|PRINT\s+USING)\s+(\d+))", std::regex::icase);
         updatedCode = std::regex_replace(updatedCode, re, [&](const std::smatch& m) {
@@ -70,8 +128,7 @@ void interactiveLoop() {
     } else if (command == "LOAD") {
       std::string filename;
       iss >> filename;
-      program.filename = filename;
-    load(program);
+      load(filename);
     } 
     else if (command == "RENUMBER") {
         int newStart = 10, delta = 10, oldStart = 0;
@@ -120,11 +177,10 @@ void interactiveLoop() {
       std::string filename;
       if (iss >> filename) {
         program.programSource.clear();
-        program.filename = filename;
-    load(program);
+        load(filename);
       }
       try {
-        runInterpreter(program);
+        runInterpreter(program.programSource);
       } catch (const std::runtime_error &e) {
         std::cerr << "Runtime error: " << e.what() << std::endl;
       }
@@ -139,8 +195,7 @@ void interactiveLoop() {
 
   int main(int argc, char *argv[]) {
     if (argc > 1) {
-      program.filename = argv[1];
-    load(program);
+      load(argv[1]);
     }
     interactiveLoop();
     return 0;

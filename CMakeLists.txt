@@ -1,20 +1,28 @@
 cmake_minimum_required(VERSION 3.25)
-project(BASIC_Runtime_Env CXX)
+project(SpaghettiBASIC LANGUAGES CXX)
 
+# Use C++11 standard
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 
 # Include directories
-include_directories(${CMAKE_SOURCE_DIR})
+include_directories(
+    ${PROJECT_SOURCE_DIR}/include
+)
 
 # Source files
 set(SOURCES
-    basic_runtime_env_final_full_run.cpp
-    interpreter_with_functions.cpp
-    renumber_with_on.cpp
-    syntax_with_on_final.cpp
-    program_structure.cpp
+    src/basic_runtime_env.cpp
+    src/fileio.cpp
+    src/interpreter.cpp
+    src/renumber.cpp
+    src/syntax.cpp
+    src/program_structure.cpp
 )
 
-# Create executable
-add_executable(basic_runtime ${SOURCES})
+# Define the executable
+add_executable(spaghetti_basic ${SOURCES})
+
+# If you have additional libraries, link them here:
+# target_link_libraries(spaghetti_basic PRIVATE <libraries...>)

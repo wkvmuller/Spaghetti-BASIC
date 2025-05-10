@@ -37,12 +37,10 @@ struct PROGRAM_STRUCTURE {
     size_t filesize_lines = 0;
 
     // Variables
-    std::map<std::string, VarInfo> numericVariables;
-    std::map<std::string, VarInfo> stringVariables;
+    std::map<std::string, VarInfo> variables;
 
     // Matrices
-    std::map<std::string, MatrixValue> numericMatrices;
-    std::map<std::string, MatrixValue> stringMatrices;
+    std::map<std::string, MatrixValue> matrices;
 
     // GOSUB stack
     std::stack<int> gosubStack;
@@ -50,14 +48,14 @@ struct PROGRAM_STRUCTURE {
     // Loop stack (FOR/NEXT, WHILE/WEND, REPEAT/UNTIL)
     std::stack<std::pair<std::string, int>> loopStack;
 
-    // DEF FN user-defined functions
+    // DEF FN user-defined functions: name → expression string
     std::map<std::string, std::string> userFunctions;
 
-    // DATA statements
+    // DATA statement vector and pointer
     std::vector<VarInfo> dataValues;
     size_t dataPointer = 0;
 
-    // PRINT USING formats
+    // PRINT USING formats: line number → format string
     std::map<int, std::string> printUsingFormats;
 };
 

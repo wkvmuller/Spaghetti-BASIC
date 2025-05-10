@@ -6,7 +6,7 @@
 #include <sstream>
 #include <string>
 
-void checkSyntax(const std::map<int, std::string> &programSource) {
+void checkSyntax(const std::map<int, std::string> &program.programSource) {
   std::set<int> referencedLines;
   std::set<int> definedLines;
 
@@ -22,8 +22,8 @@ void checkSyntax(const std::map<int, std::string> &programSource) {
   std::vector<std::string> controlStack;
   bool ok = true;
 
-  for (std::map<int, std::string>::const_iterator it = programSource.begin();
-       it != programSource.end(); ++it) {
+  for (std::map<int, std::string>::const_iterator it = program.programSource.begin();
+       it != program.programSource.end(); ++it) {
     int lineNumber = it->first;
     std::string line = it->second;
     definedLines.insert(lineNumber);

@@ -9,11 +9,7 @@
 #include <stdexcept>
 #include <string>
 #include "interpreter.h"
-#include <regex>
-#include <sstream>
-#include <stdexcept>
-#include "program_structure.h"
-extern PROGRAM_STRUCTURE program;
+
 //
 //--------------------------------------------------------------------------------
 //             prototypes
@@ -33,8 +29,8 @@ void executeGOSUB(const std::string &line);
 void executeIF(const std::string &);
 void executeINPUT(const std::string &line);
 void executeINPUTFILE(const std::string& line);
-void executeLET(const std::string &line);
-void executeMAT(const std::string &line);
+void executeLET(const std::string& line);
+void executeMAT(const std::string& line);
 void executeMATPRINT(const std::string& line);
 void executeMATPRINTFILE(const std::string& line);
 void executeMATREAD(const std::string& line);
@@ -260,158 +256,7 @@ void executeBEEP(const std::string &) { std::cout << "Stub of BEEP" << std::endl
 void executeCLOSE(const std::string& line) { std::cout << "Stub of CLOSE" << std::endl; }
 void executeDEF(const std::string &) { std::cout << "Stub of DEF" << std::endl; }
 void exACecuteDEF(const std::string &);}
-
-// Assumes you have a helper to eval an arithmetic expression to an int:
-int evalIntExpr(const std::string &expr)#include <string>
-#include <cctype>
-#include <stdexcept>
-
-// Evaluates expr and returns its integer value.
-// Supports +, -, *, / and parentheses. Throws on syntax error.
-int evalIntExpr(const std::string &expr) {
-    size_t pos = 0;
-
-    // Skip whitespace
-    auto skipWS = [&]() {
-        while (pos < expr.size() && isspace(expr[pos])) ++pos;
-    };
-
-    // Forward declarations
-    std::function<long()> parseExpr, parseTerm, parseFactor;
-
-    // <expression> ::= <term> { (+|-) <term> }
-    parseExpr = [&]() -> long {
-        long value = parseTerm();
-        skipWS();
-        while (pos < expr.size()) {
-            if (expr[pos] == '+') {
-                ++pos; skipWS();
-                value += parseTerm();
-            }
-            else if (expr[pos] == '-') {
-                ++pos; skipWS();
-                value -= parseTerm();
-            }
-            else break;
-            skipWS();
-        }
-        return value;
-    };
-
-    // <term> ::= <factor> { (*|/) <factor> }
-    parseTerm = [&]() -> long {
-        long value = parseFactor();
-        skipWS();
-        while (pos < expr.size()) {
-            if (expr[pos] == '*') {
-                ++pos; skipWS();
-                value *= parseFactor();
-            }
-            else if (expr[pos] == '/') {
-                ++pos; skipWS();
-                long rhs = parseFactor();
-                if (rhs == 0) throw std::runtime_error("Division by zero");
-                value /= rhs;
-            }
-            else break;
-            skipWS();
-        }
-        return value;
-    };
-
-    // <factor> ::= [-] ( number | '(' <expression> ')' )
-    parseFactor = [&]() -> long {
-        skipWS();
-        bool neg = false;
-        if (pos < expr.size() && expr[pos] == '-') {
-            neg = true;
-            ++pos; skipWS();
-        }
-        long value = 0;
-        if (pos < expr.size() && expr[pos] == '(') {
-            ++pos; // consume '('
-            value = parseExpr();
-            skipWS();
-            if (pos >= expr.size() || expr[pos] != ')')
-                throw std::runtime_error("Missing closing parenthesis");
-            ++pos;
-        } else if (pos < expr.size() && isdigit(expr[pos])) {
-            while (pos < expr.size() && isdigit(expr[pos])) {
-                value = value * 10 + (expr[pos++] - '0');
-            }
-        } else {
-            throw std::runtime_error("Invalid factor in expression");
-        }
-        return neg ? -value : value;
-    };
-
-    // Parse and ensure we've consumed everything
-    long result = parseExpr();
-    skipWS();
-    if (pos != expr.size())
-        throw std::runtime_error("Unexpected characters in expression");
-    return static_cast<int>(result);
-}
-
-
-void executeDIM(const std::string &line) {
-    // Strip off the "DIM" keyword
-    std::string rest = line.substr(3);
-    std::smatch m;
-    // Match:  identifier  =  [A–Z][A–Z0–9_]{0,31} with optional trailing '$'
-    //           dims       =  anything inside the parentheses
-    static const std::regex rgx(
-      R"(^\s*([A-Z][A-Z0-9_]{0,31}\$?)\s*\(([^)]*)\)\s*$)",
-      std::regex::icase
-    );
-
-    if (!std::regex_match(rest, m, rgx)) {
-        throw std::runtime_error("SYNTAX ERROR: Invalid DIM syntax: " + line);
-    }
-
-    // Extract name and detect string vs numeric
-    std::string name = m[1].str();
-    bool isString = false;
-    if (name.back() == '$') {
-        isString = true;
-        name.pop_back();
-    }
-
-    // Split and evaluate each dimension expression
-    std::vector<int> dims;
-    std::stringstream ss(m[2].str());
-    std::string part;
-    while (std::getline(ss, part, ',')) {
-        int size = evalIntExpr(part);
-        if (size < 0) {
-            throw std::runtime_error("RUNTIME ERROR: Negative array size in DIM");
-        }
-        dims.push_back(size);
-    }
-
-    // Enforce maximum of 15 dimensions
-    if (dims.size() > 15) {
-        throw std::runtime_error(
-          "SYNTAX ERROR: DIM exceeds 15 dimensions: " + std::to_string(dims.size())
-        );
-    }
-
-    // Compute total elements
-    size_t totalElements = 1;
-    for (int d : dims) totalElements *= d;
-
-    // Perform the allocation in either stringMatrices or numericMatrices
-    if (isString) {
-        auto &mat = program.stringMatrices[name];
-        mat.dimensions = dims;
-        mat.configureStorage(totalElements);
-    } else {
-        auto &mat = program.numericMatrices[name];
-        mat.dimensions = dims;
-        mat.configureStorage(totalElements);
-    }
-}
-
+void executeDIM(const std::string &line) { std::cout << "Stub of DIM" << std::endl; }
 void executeFOR(const std::string &line) { std::cout << "Stub of FOR" << std::endl; }
 void executeFORMAT(const std::string &) { std::cout << "Stub of FORMAT" << std::endl; }
 void executeGO(const std::string &line) { std::cout << "Stub of GO" << std::endl; }
@@ -430,225 +275,20 @@ void executePRINT(const std::string& line) { std::cout << "Stub of PRINT" << std
 void executePRINTFILE(const std::string& line) { std::cout << "Stub of PRINTFILE" << std::endl; }
 void executePRINTFILEUSING(const std::string& line) { std::cout << "Stub of PRINTFILEUSING" << std::endl; }
 void executeREM(const std::string &) { std::cout << "Stub of REM" << std::endl; }
+void executeREM(const std::string &);}
 void executeREPEAT(const std::string&) { std::cout << "Stub of REPEAT" << std::endl; }
 void executeRETURN(const std::string &) { std::cout << "Stub of RETURN" << std::endl; }
 void executeSEED(const std::string& line) { std::cout << "Stub of SEED" << std::endl; }
+void executeSTOP(const std::string &) { std::cout << "Stub of STOP" << std::endl; }
 void executeSTOP(const std::string &) { std::cout << "Stub of STOP" << std::endl; }
 void executeUNTIL(const std::string& line) { std::cout << "Stub of UNTIL" << std::endl; }
 void executeWEND(const std::string&) { std::cout << "Stub of WEND" << std::endl; }
 void executeWHILE(const std::string& line) { std::cout << "Stub of WHILE" << std::endl; }
 
 
-// ========================= Dispatcher =========================
-
-enum StatementType {
-  ST_UNKNOWN,
-  ST_LET,
-  ST_PRINT,
-  ST_INPUT,
-  ST_GOTO,
-  ST_IF,
-  ST_FOR,
-  ST_NEXT,
-  ST_READ,
-  ST_DATA,
-  ST_RESTORE,
-  ST_END,
-  ST_DEF,
-  ST_DIM,
-  ST_REM,
-  ST_STOP,
-  ST_GOSUB,
-  ST_RETURN,
-  ST_ON,
-  ST_MAT,
-  ST_FORMAT,
-  ST_BEEP,
-  ST_OPEN,
-  ST_CLOSE,
-  ST_PRINTFILE,
-  ST_INPUTFILE,
-  ST_WHILE,
-  ST_WEND,
-  ST_REPEAT,
-  ST_UNTIL,
-  ST_SEED,
-  ST_MATREAD
-};
-
-StatementType identifyStatement(const std::string &keyword) {
-  if (keyword == "LET")
-    return ST_LET;
-  if (keyword == "PRINT")
-    return ST_PRINT;
-  if (keyword == "INPUT")
-    return ST_INPUT;
-  if (keyword == "GOTO")
-    return ST_GOTO;
-  if (keyword == "IF")
-    return ST_IF;
-  if (keyword == "FOR")
-    return ST_FOR;
-  if (keyword == "NEXT")
-    return ST_NEXT;
-  if (keyword == "READ")
-    return ST_READ;
-  if (keyword == "DATA")
-    return ST_DATA;
-  if (keyword == "RESTORE")
-    return ST_RESTORE;
-  if (keyword == "END")
-    return ST_END;
-  if (keyword == "DEF")
-    return ST_DEF;
-  if (keyword == "DIM")
-    return ST_DIM;
-  if (keyword == "REM")
-    return ST_REM;
-  if (keyword == "STOP")
-    return ST_STOP;
-  if (keyword == "GOSUB")
-    return ST_GOSUB;
-  if (keyword == "RETURN")
-    return ST_RETURN;
-  if (keyword == "ON")
-    return ST_ON;
-  if (keyword == "MAT")
-    return ST_MAT;
-  if (keyword == ":=")
-    return ST_FORMAT;
-  if (keyword == "BEEP")
-    return ST_BEEP;
-  if (keyword == "OPEN")
-    return ST_OPEN;
-  if (keyword == "CLOSE")
-    return ST_CLOSE;
-  if (keyword == "PRINT#")
-    return ST_PRINTFILE;
-  if (keyword == "INPUT#")
-    return ST_INPUTFILE;
-  if (keyword == "WHILE")
-    return ST_WHILE;
-  if (keyword == "WEND")
-    return ST_WEND;
-  if (keyword == "REPEAT")
-    return ST_REPEAT;
-  if (keyword == "UNTIL")
-    return ST_UNTIL;
-  if (keyword == "SEED")
-    return ST_SEED;
-  if (keyword=="MAT READ”)
-    return ST_MATREAD;
-  return ST_UNKNOWN;
-}
-
-
 void runInterpreter(PROGRAM_STRUCTURE& program) {
-    for (const auto& entry : program.programSource) {
-    auto linenum = entry.first;
-    auto code = entry.second; {
+    for (const auto& [linenum, code] : program.programSource) {
         std::cout << "Executing line " << linenum << ": " << code << std::endl;
         // TODO: Add interpreter logic here
-            StatementType stmt = identifyStatement(keyword);
-    switch (stmt) {
-    case ST_PRINTFILEUSING: 
-      executePRINTFILEUSING(it->second);
-    case ST_LET:
-      executeLET(it->second);
-      break;
-    case ST_PRINT:
-      executePRINT(it->second);
-      break;
-    case ST_INPUT:
-      executeINPUT(it->second);
-      break;
-    case ST_GOTO:
-      executeGOTO(it->second);
-      break;
-    case ST_IF:
-      executeIF(it->second);
-      break;
-    case ST_FOR:
-      executeFOR(it->second);
-      break;
-    case ST_NEXT:
-      executeNEXT(it->second);
-      break;
-    case ST_READ:
-      executeREAD(it->second);
-      break;
-    case ST_DATA:
-      executeDATA(it->second);
-      break;
-    case ST_RESTORE:
-      executeRESTORE(it->second);
-      break;
-    case ST_END:
-      executeEND(it->second);
-      break;
-    case ST_DEF:
-      executeDEF(it->second);
-      break;
-    case ST_DIM:
-      executeDIM(it->second);
-      break;
-    case ST_REM:
-      executeREM(it->second);
-      break;
-    case ST_STOP:
-      executeSTOP(it->second);
-      break;
-    case ST_GOSUB:
-      executeGOSUB(it->second);
-      break;
-    case ST_RETURN:
-      executeRETURN(it->second);
-      break;
-    case ST_ON:
-      executeON(it->second);
-      break;
-    case ST_MAT:
-      executeMAT(it->second);
-      break;
-    case ST_FORMAT:
-      executeFORMAT(it->second);
-      break;
-    case ST_BEEP:
-      executeBEEP(it->second);
-      break;
-    case ST_OPEN:
-      executeOPEN(it->second);
-      break;
-    case ST_CLOSE:
-      executeCLOSE(it->second);
-      break;
-    case ST_PRINTFILE:
-      executePRINTFILE(it->second);
-      break;
-    case ST_INPUTFILE:
-      executeINPUTFILE(it->second);
-      break;
-    case ST_WHILE:
-      executeWHILE(it->second);
-      break;
-    case ST_WEND:
-      executeWEND(it->second);
-      break;
-    case ST_REPEAT:
-      executeREPEAT(it->second);
-      break;
-    case ST_UNTIL:
-      executeUNTIL(it->second);
-      break;
-    case ST_SEED:
-      executeSEED(it->second);
-      break;
-    case ST_MATREAD: executeMATREAD(it->second); break;
-
-    default:
-      return "Unhandled statement: " << it->second << std::endl;
-    }
-  }
-}
     }
 }

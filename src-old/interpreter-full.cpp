@@ -9,6 +9,57 @@
 #include <string>
 #include <vector>
 
+<<<<<<< HEAD
+//
+//--------------------------------------------------------------------------------
+//             prototypes
+//
+
+void evaluateMATExpression(const std::string& target, const std::string& expression);
+void executeBEEP(const std::string &);
+void executeBEEP(const std::string &);
+void executeCLOSE(const std::string& line);
+void executeDEF(const std::string &);
+void executeDIM(const std::string &line);
+void executeFOR(const std::string &line);
+void executeFORMAT(const std::string &);
+void executeGO(const std::string &line);
+void executeGOSUB(const std::string &line);
+void executeIF(const std::string &);
+void executeINPUT(const std::string &line);
+void executeINPUTFILE(const std::string& line);
+void executeLET(const std::string& line);
+void executeMAT(const std::string& line);
+void executeMATPRINT(const std::string& line);
+void executeMATPRINTFILE(const std::string& line);
+void executeMATREAD(const std::string& line);
+void executeON(const std::string &line);
+void executeOPEN(const std::string& line);
+void executePRINT(const std::string& line);
+void executePRINTFILE(const std::string& line);
+void executePRINTFILEUSING(const std::string& line);
+void executeREM(const std::string &);
+void executeREM(const std::string &);}
+void executeREPEAT(const std::string&);
+void executeRETURN(const std::string &);
+void executeSEED(const std::string& line);
+void executeSTOP(const std::string &);
+void executeSTOP(const std::string &);
+void executeUNTIL(const std::string& line);
+void executeWEND(const std::string&);
+void executeWHILE(const std::string& line);
+void setSparseValue(const std::string& name, const std::vector<int>& idx, const ArgsInfo& value);
+void sparseMultiplyScalar(ArrayInfo& matrix, double scalar);
+void sparseTrim(ArrayInfo& matrix);
+
+
+//
+//--------------------------------------------------------------------------------
+//            Global Variables, structs, etc & helper functions.
+//
+
+=======
+>>>>>>> 79fb27c (restarting interperter)
 enum VariableType {
   VT_UNKNOWN,
   VT_TEXT,
@@ -62,6 +113,26 @@ ArgsInfo makeArgsInfo(long long line, std::string idname,
 }
 
 struct ArrayInfo {
+<<<<<<< HEAD
+    std::vector<int> shape;
+    std::vector<double> data;                             // numeric dense
+    std::map<std::vector<int>, double> sparse;            // numeric sparse
+    std::vector<std::string> dataStr;                     // ← string dense
+    std::map<std::vector<int>, std::string> stringSparse; // ← string sparse
+};
+
+
+std::map<std::string, ArrayInfo> arrays;
+
+// In your LoopFrame definition, add flags for string loops:
+struct LoopFrame {
+    std::string var;
+    bool        isString;    // ← new
+    char        startChar;   // ← new, for string loops
+    double      final;       // numeric final or char‐code final
+    double      step;        // numeric step or char‐code step (usually 1)
+    int         returnLine;
+=======
   std::vector<int> shape;
   std::vector<double> data;                  // for <= 3D
   std::map<std::vector<int>, double> sparse; // for >= 4D
@@ -74,6 +145,7 @@ struct LoopFrame {
   double final;
   double step;
   int returnLine;
+>>>>>>> 79fb27c (restarting interperter)
 };
 
 enum FieldType { FIELD_TEXT, FIELD_NUMERIC, FIELD_STRING };
@@ -95,6 +167,110 @@ struct IdentifierReturn {
 
 long long currentline;  //current line we are working on.
 
+<<<<<<< HEAD
+static std::vector<ArgsInfo> dataBuffer;
+static size_t               dataPointer = 0;
+
+<<<<<<< HEAD
+=======
+/// Fill a square matrix with 1’s on the diagonal, 0’s elsewhere.
+
+
+void executeMATIDENTITY(const std::string& line) {
+    // Expect syntax:  MAT IDENTITY(A)
+    size_t open = line.find('(');
+    size_t close = line.find(')', open);
+    if (open == std::string::npos || close == std::string::npos) {
+        std::cerr << "ERROR: Malformed MAT IDENTITY statement\n";
+        return;
+    }
+    std::string name = line.substr(open + 1, close - open - 1);
+
+    auto it = arrays.find(name);
+    if (it == arrays.end()) {
+        std::cerr << "ERROR: MAT IDENTITY on undefined matrix " << name << "\n";
+        return;
+    }
+    ArrayInfo& mat = it->second;
+
+    // must be 2D and square
+    if (mat.shape.size() != 2 || mat.shape[0] != mat.shape[1]) {
+        std::cerr << "ERROR: MAT IDENTITY requires a square 2D matrix: " << name << "\n";
+        return;
+    }
+    int n = mat.shape[0];
+
+    // numeric dense
+    if (!mat.data.empty()) {
+        for (int i = 0; i < n; ++i)
+            for (int j = 0; j < n; ++j)
+                mat.data[i * n + j] = (i == j ? 1.0 : 0.0);
+    }
+    // numeric sparse
+    else {
+        mat.sparse.clear();
+        for (int i = 0; i < n; ++i)
+            mat.sparse[{i, i}] = 1.0;
+    }
+
+    // clear any leftover string entries
+    mat.stringSparse.clear();
+}
+>>>>>>> ace41c3 (update pclasss parse...)
+
+// Dispatcher for all PRINT‐variants:
+//   plain PRINT,
+//   PRINT USING <formatLine>,
+//   PRINT #<channel>,
+//   PRINT #<channel> USING <formatLine>
+//
+// items: a list of raw expressions or string literals to print
+// channel: file handle number, or –1 for stdout
+// usingFormatLine: program‐line number of a FORMAT definition, or –1 for no formatting
+void evaluatePRINTexpression(
+    const std::vector<std::string>& items,
+    int channel = -1,
+    int usingFormatLine = -1)
+{
+    std::ostringstream stmt;
+
+    // Base command
+    if (channel >= 0) {
+        stmt << "PRINT #" << channel;
+    } else {
+        stmt << "PRINT";
+    }
+
+    // Optional USING clause
+    if (usingFormatLine >= 0) {
+        stmt << " USING " << usingFormatLine;
+    }
+
+    // Append comma + each item
+    for (const auto& tok : items) {
+        stmt << ",";
+        // items may be literals like "\"HELLO\"" or expressions/vars
+        stmt << tok;
+    }
+
+    // Dispatch to the correct handler
+    const std::string line = stmt.str();
+    if (channel >= 0) {
+        if (usingFormatLine >= 0) {
+            executePRINTFILEUSING(line);
+        } else {
+            executePRINTFILE(line);
+        }
+    } else {
+        if (usingFormatLine >= 0) {
+            executeFORMAT(line);
+        } else {
+            executePRINT(line);
+        }
+    }
+}
+=======
+>>>>>>> 79fb27c (restarting interperter)
 
 //
 //==================================================================================
@@ -230,6 +406,13 @@ double determinant(const std::vector<double>& mat, int n) {
 }
 
 
+<<<<<<< HEAD
+# Replace stub evaluateMATExpression with full implementation
+# Replace stub evaluateMATExpression with full implementation
+void evaluateMATExpression(const std::string& target, const std::string& expression) {
+    std::string expr = expression;
+    expr.erase(0, expr.find_first_not_of(" \t"));
+=======
 
 void evaluateMATExpression(const std::string& target, const std::string& expression) {
     if (expr.find("DETERMINANT(") == 0) {
@@ -257,6 +440,7 @@ void evaluateMATExpression(const std::string& target, const std::string& express
 
     std::string expr = expression;
     expr.erase(0, expr.find_first_not_of(" 	"));
+>>>>>>> 79fb27c (restarting interperter)
 
     if (expr.find("INV(") == 0) {
         size_t open = expr.find("(");
@@ -266,6 +450,10 @@ void evaluateMATExpression(const std::string& target, const std::string& express
             std::cerr << "ERROR: INV source matrix not found: " << source << std::endl;
             return;
         }
+<<<<<<< HEAD
+        std::cerr << "[STUB] INV() not implemented; copying matrix for '" << source << "'\n";
+        arrays[target] = arrays[source];
+=======
 
         const ArrayInfo& src = arrays[source];
         if (src.dimensions != 2 || src.shape.size() != 2 || src.shape[0] != src.shape[1]) {
@@ -285,6 +473,7 @@ void evaluateMATExpression(const std::string& target, const std::string& express
         }
 
         arrays[target] = result;
+>>>>>>> 79fb27c (restarting interperter)
         return;
     }
 
@@ -319,6 +508,8 @@ void evaluateMATExpression(const std::string& target, const std::string& express
 
     std::istringstream iss(expr);
     std::string token1, op, token2;
+<<<<<<< HEAD
+=======
 
     std::istringstream iss_check(expr);
     std::string left, op, right;
@@ -357,6 +548,7 @@ void evaluateMATExpression(const std::string& target, const std::string& express
         return;
     }
 
+>>>>>>> 79fb27c (restarting interperter)
     iss >> token1;
 
     if (iss >> op >> token2) {
@@ -418,6 +610,116 @@ void evaluateMATExpression(const std::string& target, const std::string& express
     }
 }
 
+<<<<<<< HEAD
+
+void executeMATPRINT(const std::string& line) {
+    std::istringstream iss(line);
+    std::string cmd, arrayName;
+    iss >> cmd >> arrayName;
+    std::cout << "[MAT STUB] MAT PRINT " << arrayName << std::endl;
+}
+
+void executeMATPRINTFILE(const std::string& line) {
+    std::istringstream iss(line);
+    std::string cmd, hash;
+    int filenum;
+    iss >> cmd >> hash >> filenum;
+    std::string rest;
+    std::getline(iss, rest);
+    std::cout << "[MAT STUB] MAT PRINT #" << filenum << ", " << rest << std::endl;
+}
+<<<<<<< HEAD
+
+=======
+// ─── Hook it into the MAT dispatcher ──────────────────────────────────────────
+
+void void executeMAT(const std::string& line) {
+    std::istringstream iss(line);
+    std::string cmd, sub;
+    iss >> cmd >> sub;  // “MAT” and next token
+    const std::string& line) {
+    std::istringstream iss(line);
+    std::string cmd, sub;
+    iss >> cmd >> sub;  // cmd == "MAT", sub == next token
+
+    if (sub == "IDENTITY") {
+        executeMATIDENTITY(line);
+    }
+    else if (sub == "READ") {
+        executeMATREAD(line);
+    }
+    else if (sub == "PRINT") {
+        // MAT PRINT  …  could be console or file
+        // Peek past “PRINT”
+        iss >> std::ws;
+        if (iss.peek() == '#') {
+            // MAT PRINT #n, A, B…
+            executeMATPRINTFILE(line);
+        } else {
+            // MAT PRINT A, B…
+            executeMATPRINT(line);
+        }
+    }
+    else {
+        // MAT <target> = <expr>
+        std::string target = sub, eq;
+        iss >> eq;              // consume “=”
+        std::string expr;
+        std::getline(iss, expr);
+        expr.erase(0, expr.find_first_not_of(" \t"));
+        evaluateMATExpression(target, expr);
+    }
+}
+
+void executeMATREAD(const std::string& line) {
+    std::istringstream iss(line);
+    std::string cmd, readWord, name;
+    iss >> cmd >> readWord >> name;  // “MAT READ A”
+
+    if (!arrays.count(name)) {
+        std::cerr << "ERROR: MAT READ undefined matrix " << name << "\n";
+        return;
+    }
+    ArrayInfo& mat = arrays[name];
+
+    // Compute total elements
+    size_t total = 1;
+    for (int d : mat.shape) total *= d;
+
+    // Temp index vector
+    std::vector<int> idx(mat.shape.size());
+
+    // Fill row-major order
+    for (size_t n = 0; n < total; ++n) {
+        // Convert flat n → multidimensional idx[]
+        size_t rem = n;
+        for (int dim = int(mat.shape.size()) - 1; dim >= 0; --dim) {
+            idx[dim] = rem % mat.shape[dim];
+            rem /= mat.shape[dim];
+        }
+
+        // Fetch next DATA item
+        ArgsInfo v = getNextData();
+
+        // Assign into dense or sparse, numeric or string
+        if (!mat.data.empty()) {
+            // Dense numeric
+            mat.data[n] = v.isstring ? 0.0 : v.d;
+        } else {
+            // Sparse numeric
+            if (!v.isstring)
+                mat.sparse[idx] = v.d;
+        }
+        if (v.isstring) {
+            // Store string regardless of dense/sparse
+            mat.stringSparse[idx] = v.s;
+        }
+    }
+}
+>>>>>>> ace41c3 (update pclasss parse...)
+
+=======
+>>>>>>> 79fb27c (restarting interperter)
 //
 //=======================================================================================
 //   inline functsupport
@@ -455,7 +757,11 @@ IdentifierReturn evaluateFunction(const std::string &name,
   if (name == "SIN" || name == "COS" || name == "TAN" || name == "SQR" ||
           name == "STRING$" || name == "LOG" || name == "LOG10" ||
           name == "CLOG" || name == "EXP" || name == "INT" || name == "ROUND" ||
+<<<<<<< HEAD
+          name == "FLOOR" || name == "CEIL" | name == "RND" || name = "DET" )
+=======
           name == "FLOOR" || name == "CEIL" | name == "RND")
+>>>>>>> 79fb27c (restarting interperter)
     if (args[0].isstring) {
       std::cerr << "Error on " << name
                 << " passing a string where number expected [" << args[0].s
@@ -537,6 +843,31 @@ IdentifierReturn evaluateFunction(const std::string &name,
     temp.d = rand() / RAND_MAX;
     return temp;
   }
+<<<<<<< HEAD
+    if (name == "DET" && args.size() == 1) {
+      // args[0].identifiername should be the matrix variable name
+      const std::string& matName = args[0].identifiername;
+      if (!arrays.count(matName)) {
+          std::cerr << "ERROR: DET on undefined matrix " << matName
+                    << " line:" << args[0].linenumber << std::endl;
+          temp.d = 0.0;
+          return temp;
+      }
+      const ArrayInfo& mat = arrays.at(matName);
+      // Must be square 2D
+      if (mat.shape.size() != 2 || mat.shape[0] != mat.shape[1]) {
+          std::cerr << "ERROR: DET requires a square 2D matrix: " << matName
+                    << std::endl;
+          temp.d = 0.0;
+          return temp;
+      }
+      int n = mat.shape[0];
+      // Use dense data for determinant
+      temp.d = determinant(mat.data, n);
+      return temp;
+  }
+=======
+>>>>>>> 79fb27c (restarting interperter)
   std::cerr << "Unknown function: " << name << std::endl;
   temp.d = static_cast<double>(0.0);
   return temp;
@@ -650,6 +981,10 @@ IdentifierReturn evaluateStringFunction(const std::string &name,
   return temp;
 }
 
+<<<<<<< HEAD
+
+=======
+>>>>>>> 79fb27c (restarting interperter)
 // ========================= Expression Evaluator =========================
 
 class Parser {
@@ -737,6 +1072,102 @@ private:
     return input.substr(start, pos - start);
   }
 
+<<<<<<< HEAD
+IdentifierReturn Parser::parsePrimary() {
+    IdentifierReturn valreturned;
+    skipWhitespace();
+
+    // 1) String literal: "..."
+    if (peek() == '"') {
+        // consume opening quote
+        get();
+        std::string s;
+        // accumulate until closing quote or end
+        while (pos < input.length() && input[pos] != '"') {
+            s += input[pos++];
+        }
+        // consume closing quote if present
+        if (peek() == '"') get();
+
+        valreturned.isstring = true;
+        valreturned.s        = s;
+        valreturned.d        = 0.0;
+        return valreturned;
+    }
+
+    // 2) Parenthesized expression: ( expr )
+    if (peek() == '(') {
+        get();  // consume '('
+        double num = parseExpression();
+        if (get() != ')')
+            throw std::runtime_error("Expected ')' in expression");
+        valreturned.isstring = false;
+        valreturned.d        = num;
+        return valreturned;
+    }
+
+    // 3) Identifier or function call
+    if (std::isalpha(peek())) {
+        // parse identifier (may end with $ for string variables)
+        size_t start = pos;
+        while (pos < input.length() &&
+               (std::isalnum(input[pos]) || input[pos] == '$'))
+            ++pos;
+        std::string name = input.substr(start, pos - start);
+
+        // function call?
+        if (peek() == '(') {
+            // consume '('
+            get();
+            std::vector<ArgsInfo> args;
+            if (peek() != ')') {
+                // parse comma‐separated expressions
+                do {
+                    double argval = parseExpression();
+                    args.push_back(makeArgsInfo(linenumber, name, false, "", argval));
+                } while (peek() == ',' && get());
+            }
+            if (get() != ')')
+                throw std::runtime_error("Expected ')' after function arguments");
+
+            // dispatch to numeric or string function evaluator
+            if (name.back() == '$') {
+                // string‐returning function
+                IdentifierReturn tmp = evaluateStringFunction(name, args);
+                return tmp;
+            } else {
+                IdentifierReturn tmp = evaluateFunction(name, args);
+                return tmp;
+            }
+        }
+
+        // not a function: variable lookup
+        auto it = variables.find(name);
+        if (it != variables.end()) {
+            const VarInfo &v = it->second;
+            if (v.vT == VT_STRING) {
+                valreturned.isstring = true;
+                valreturned.s        = v.s;
+                valreturned.d        = 0.0;
+            } else {
+                valreturned.isstring = false;
+                valreturned.d        = v.d;
+            }
+        } else {
+            // undefined scalar: default to zero or empty
+            valreturned.isstring = (name.back() == '$');
+            valreturned.s        = "";
+            valreturned.d        = 0.0;
+        }
+        return valreturned;
+    }
+
+    // 4) Numeric literal
+    valreturned.isstring = false;
+    valreturned.d        = parseNumber();
+    return valreturned;
+}
+=======
   IdentifierReturn parsePrimary() {
     IdentifierReturn valreturned;
           std::vector<ArgsInfo> args;  
@@ -780,6 +1211,7 @@ private:
     evalueatefunctionreturn.d = parseNumber();
     return evalueatefunctionreturn;
   }
+>>>>>>> 79fb27c (restarting interperter)
 
 
 double parseNumber() {
@@ -805,6 +1237,39 @@ void executeLET(const std::string& line) {
     iss >> keyword >> target >> eq;
     std::string expr;
     std::getline(iss, expr);
+<<<<<<< HEAD
+    expr.erase(0, expr.find_first_not_of(" \t"));
+
+    // Determine if this is a string assignment
+    bool isStringVar = (!target.empty() && target.back() == '$');
+
+    // Evaluate the value
+    ArgsInfo value;
+    if (isStringVar && expr.size() >= 2 && expr.front() == '"' && expr.back() == '"') {
+        // Literal string
+        value.isstring = true;
+        value.s = expr.substr(1, expr.size() - 2);
+    } else {
+        // Numeric or string-from-function
+        if (isStringVar) {
+            // Use string evaluator
+            value = evaluateStringFunction(expr, { makeArgsInfo(currentline, "", false, expr, 0.0) });
+        } else {
+            // Numeric
+            value.isstring = false;
+            value.d = evaluateExpression(expr, currentline);
+        }
+    }
+
+    // Check for array indexing
+    std::string name;
+    std::vector<int> indices;
+    if (parseIndexedArray(target, name, indices)) {
+        // Assign into array (dense vs sparse handled by ArrayInfo contents)
+        setSparseValue(name, indices, value);
+    } else {
+        // Scalar variable
+=======
     expr.erase(0, expr.find_first_not_of(" 	"));
 
     ArgsInfo value = evaluateFunction("VALUE", {makeArgsInfo(expr)});
@@ -814,6 +1279,7 @@ void executeLET(const std::string& line) {
     if (parseIndexedArray(target, name, indices)) {
         setSparseValue(name, indices, value);
     } else {
+>>>>>>> 79fb27c (restarting interperter)
         VarInfo info;
         if (value.isstring) {
             info.vT = VT_STRING;
@@ -825,6 +1291,15 @@ void executeLET(const std::string& line) {
         variables[target] = info;
     }
 
+<<<<<<< HEAD
+    // Echo assignment
+    if (value.isstring)
+        std::cout << target << " = \"" << value.s << "\"" << std::endl;
+    else
+        std::cout << target << " = " << value.d << std::endl;
+}
+
+=======
     std::cout << target << " = " << (value.isstring ? value.s : std::to_string(value.d)) << std::endl;
 }
       if (arr.data.size()) {
@@ -852,6 +1327,7 @@ void executeLET(const std::string& line) {
     std::cout << target << " = " << value << std::endl;
   }
 }
+>>>>>>> 79fb27c (restarting interperter)
 
 void executePRINT(const std::string& line) {
     std::istringstream iss(line);
@@ -924,6 +1400,99 @@ void executePRINT(const std::string& line) {
 }
 
 void executeINPUT(const std::string &line) {
+<<<<<<< HEAD
+    // Parse optional prompt and variable list
+    std::string rest = line.substr(5);
+    std::string prompt;
+    size_t semi = rest.find(';');
+    if (semi != std::string::npos) {
+        prompt = rest.substr(0, semi);
+        rest = rest.substr(semi + 1);
+    }
+    // Trim prompt quotes
+    if (!prompt.empty() && prompt.front() == '\"' && prompt.back() == '\"') {
+        prompt = prompt.substr(1, prompt.size() - 2);
+    }
+    // Show prompt
+    if (!prompt.empty()) std::cout << prompt << " ";
+    std::cout << "? ";
+    // Read user input line
+    std::string inputLine;
+    std::getline(std::cin, inputLine);
+
+    // Tokenize input values
+    std::vector<std::string> inputs;
+    std::stringstream ssin(inputLine);
+    std::string tok;
+    while (std::getline(ssin, tok, ',')) {
+        // trim whitespace
+        tok.erase(0, tok.find_first_not_of(" \t"));
+        tok.erase(tok.find_last_not_of(" \t") + 1);
+        inputs.push_back(tok);
+    }
+
+    // Tokenize target variables
+    std::vector<std::string> vars;
+    std::stringstream ssvar(rest);
+    while (std::getline(ssvar, tok, ',')) {
+        tok.erase(0, tok.find_first_not_of(" \t"));
+        tok.erase(tok.find_last_not_of(" \t") + 1);
+        if (!tok.empty()) vars.push_back(tok);
+    }
+
+    // Assign values
+    for (size_t i = 0; i < vars.size(); ++i) {
+        // If not enough inputs, stop
+        if (i >= inputs.size()) {
+            std::cerr << "ERROR: Not enough input values." << std::endl;
+            break;
+        }
+        const std::string &target = vars[i];
+        const std::string &valstr = inputs[i];
+
+        // Determine if string variable
+        bool isStringVar = (!target.empty() && target.back() == '$");
+
+        // Prepare ArgsInfo
+        ArgsInfo value;
+        if (isStringVar) {
+            // literal or expression producing string
+            if (valstr.size() >= 2 && valstr.front() == '\"' && valstr.back() == '\"') {
+                value.isstring = true;
+                value.s = valstr.substr(1, valstr.size() - 2);
+            } else {
+                // evaluate string function if needed
+                value = evaluateStringFunction(valstr, { makeArgsInfo(currentline,"",false,"",0.0) });
+            }
+        } else {
+            // numeric
+            value.isstring = false;
+            try {
+                value.d = std::stod(valstr);
+            } catch (...) {
+                value.d = evaluateExpression(valstr, currentline);
+            }
+        }
+
+        // Check for array indexing
+        std::string name;
+        std::vector<int> indices;
+        if (parseIndexedArray(target, name, indices)) {
+            setSparseValue(name, indices, value);
+        } else {
+            // Scalar variable
+            VarInfo info;
+            if (value.isstring) {
+                info.vT = VT_STRING;
+                info.s  = value.s;
+            } else {
+                info.vT = VT_DOUBLE;
+                info.d  = value.d;
+            }
+            variables[target] = info;
+        }
+    }
+=======
   std::string rest = line.substr(5); // after "INPUT"
   std::stringstream ss(rest);
   std::string token;
@@ -965,6 +1534,7 @@ void executeINPUT(const std::string &line) {
       variables[var] = 0;
     }
   }
+>>>>>>> 79fb27c (restarting interperter)
 }
 
 void executeGO(const std::string &line) {
@@ -981,6 +1551,133 @@ void executeGO(const std::string &line) {
   }
 }
 
+<<<<<<< HEAD
+void executeIF(const std::string& line) {
+    // Parse out the condition and the “then” clause
+    size_t thenPos = line.find("THEN");
+    if (thenPos == std::string::npos) {
+        std::cerr << "ERROR: Malformed IF—missing THEN\n";
+        return;
+    }
+    // Extract and trim condition
+    std::string cond = line.substr(2, thenPos - 2);
+    cond.erase(0, cond.find_first_not_of(" \t"));
+    cond.erase(cond.find_last_not_of(" \t") + 1);
+    // Extract the statement to run if true
+    std::string thenStmt = line.substr(thenPos + 4);
+    thenStmt.erase(0, thenStmt.find_first_not_of(" \t"));
+
+    // Evaluate condition for numeric or string
+    bool isTrue = false;
+    if (!cond.empty() && cond.front() == '"' && cond.back() == '"') {
+        // literal string → true if not empty
+        std::string s = cond.substr(1, cond.size() - 2);
+        isTrue = !s.empty();
+    }
+    else if (!cond.empty() && cond.back() == '$') {
+        // string variable → true if not empty
+        auto it = variables.find(cond);
+        if (it != variables.end() && it->second.vT == VT_STRING) {
+            isTrue = !it->second.s.empty();
+        }
+    }
+    else {
+        // numeric expression → true if non-zero
+        double v = evaluateExpression(cond, currentline);
+        isTrue = (v != 0.0);
+    }
+
+    // If true, dispatch the THEN‐clause just like a line by itself
+    if (isTrue) {
+        std::istringstream iss(thenStmt);
+        std::string kw;
+        iss >> kw;
+        for (auto& c : kw) c = std::toupper(c);
+        StatementType st = identifyStatement(kw);
+        switch (st) {
+          case ST_PRINT:      executePRINT(thenStmt);      break;
+          case ST_LET:        executeLET(thenStmt);        break;
+          case ST_INPUT:      executeINPUT(thenStmt);      break;
+          case ST_GOTO:       executeGOTO(thenStmt);       break;
+          case ST_GOSUB:      executeGOSUB(thenStmt);      break;
+          case ST_RETURN:     executeRETURN(thenStmt);     break;
+          case ST_DIM:        executeDIM(thenStmt);        break;
+          case ST_MAT:        executeMAT(thenStmt);        break;
+          // … include any other statement types you support …
+          default:
+            std::cerr << "ERROR: Unsupported statement in IF THEN: " << kw << "\n";
+        }
+    }
+}
+
+// Updated executeFOR to handle numeric loops and single‐char string loops:
+void executeFOR(const std::string& line) {
+    if (loopStack.size() >= 15) {
+        std::cerr << "ERROR: Maximum loop nesting (15) exceeded." << std::endl;
+        currentLineNumber = -1;
+        return;
+    }
+
+    std::istringstream iss(line);
+    std::string cmd, var, eq, tokw;
+    iss >> cmd >> var >> eq;
+
+    bool isStringVar = !var.empty() && var.back() == '$';
+    double startVal = 0.0, finalVal = 0.0, stepVal = 1.0;
+    char   startChar = '\0', finalChar = '\0';
+
+    if (isStringVar) {
+        // Parse start/final as single‐char literals or variables
+        std::string sStart, sFinal;
+        iss >> sStart >> tokw >> sFinal;
+
+        // Helper to get char code from literal or variable
+        auto getChar = [&](const std::string& tok) {
+            if (tok.size() >= 2 && tok.front()=='\"' && tok.back()=='\"')
+                return tok[1];
+            auto it = variables.find(tok);
+            if (it != variables.end() && it->second.vT == VT_STRING && !it->second.s.empty())
+                return it->second.s[0];
+            return '\0';
+        };
+
+        startChar = getChar(sStart);
+        finalChar = getChar(sFinal);
+        startVal  = static_cast<double>(startChar);
+        finalVal  = static_cast<double>(finalChar);
+        // STEP on strings not supported; defaults to +1 char code
+    } else {
+        // Numeric FOR
+        iss >> startVal >> tokw >> finalVal;
+        std::string rest;
+        std::getline(iss, rest);
+        auto pos = rest.find("STEP");
+        if (pos != std::string::npos) {
+            std::istringstream ss2(rest.substr(pos + 4));
+            ss2 >> stepVal;
+        }
+        // Initialize loop variable
+        variables[var] = makeVarInfo(VT_DOUBLE, "", startVal);
+    }
+
+    // Push frame
+    LoopFrame frame;
+    frame.var        = var;
+    frame.isString   = isStringVar;
+    frame.startChar  = startChar;
+    frame.final      = isStringVar ? finalVal : finalVal;
+    frame.step       = isStringVar ? 1.0      : stepVal;
+    frame.returnLine = currentLineNumber;
+    loopStack.push_back(frame);
+
+    // For string loops, initialize the variable
+    if (isStringVar) {
+        VarInfo info;
+        info.vT = VT_STRING;
+        info.s  = std::string(1, startChar);
+        variables[var] = info;
+    }
+=======
 void executeIF(const std::string &) { return "[IF stub]\n"; }
 void executeFOR(const std::string &line) {
   if (loopStack.size() >= 15) {
@@ -1010,11 +1707,126 @@ void executeFOR(const std::string &line) {
   frame.step = step;
   frame.returnLine = currentLineNumber;
   loopStack.push_back(frame);
+>>>>>>> 79fb27c (restarting interperter)
 }
 
 void executeDEF(const std::string &) {}
 
 void executeDIM(const std::string &line) {
+<<<<<<< HEAD
+    // Parse variable name and dimension list
+    std::string rest = line.substr(3);
+    std::stringstream ss(rest);
+    std::string varname, dims;
+    if (!std::getline(ss, varname, '(')) return;
+    varname.erase(0, varname.find_first_not_of(" \t"));
+    varname.erase(varname.find_last_not_of(" \t") + 1);
+    if (!std::getline(ss, dims, ')')) return;
+
+    // Build shape vector and compute total elements
+    std::stringstream dimstream(dims);
+    std::string token;
+    std::vector<int> shape;
+    long long total = 1;
+    while (std::getline(dimstream, token, ',')) {
+        token.erase(0, token.find_first_not_of(" \t"));
+        token.erase(token.find_last_not_of(" \t") + 1);
+        int dim = 0;
+        try {
+            dim = std::stoi(token);
+        } catch (...) {
+            std::cerr << "ERROR: Invalid dimension value: " << token << std::endl;
+            return;
+        }
+        if (dim <= 0) {
+            std::cerr << "ERROR: Dimension must be positive: " << dim << std::endl;
+            return;
+        }
+        shape.push_back(dim);
+        total *= dim;
+    }
+
+    if (shape.size() > 11) {
+        std::cerr << "ERROR: Too many dimensions (max 11)." << std::endl;
+        return;
+    }
+
+    // Create and initialize ArrayInfo
+    ArrayInfo arr;
+    arr.shape = shape;
+
+    bool isString = (!varname.empty() && varname.back() == '$');
+    if (total < 10000) {
+        if (isString) {
+            arr.dataStr.assign(static_cast<size_t>(total), std::string());
+        } else {
+            arr.data.assign(static_cast<size_t>(total), 0.0);
+        }
+        arr.sparse.clear();
+        arr.stringSparse.clear();
+        std::cout << "DIM: allocated " << (isString ? "string" : "numeric")
+                  << " dense array " << varname << " with " << total << " elements." << std::endl;
+    } else {
+        if (isString) {
+            arr.dataStr.clear();
+        } else {
+            arr.data.clear();
+        }
+        arr.sparse.clear();
+        arr.stringSparse.clear();
+        std::cout << "DIM: initialized " << (isString ? "string" : "numeric")
+                  << " sparse array " << varname << " capable of " << total << " elements." << std::endl;
+    }
+
+    arrays[varname] = std::move(arr);
+}
+
+void executeMATPRINTFILE(const std::string& line) {
+    // Parse command: MAT PRINT#<filenum>, A, B$, C, ...
+    std::istringstream iss(line);
+    std::string cmd, hash;
+    int filenum;
+    iss >> cmd >> hash >> filenum;
+
+    // Collect array names
+    std::vector<std::string> arraysToPrint;
+    std::string name;
+    while (std::getline(iss, name, ',')) {
+        name.erase(0, name.find_first_not_of(" \t"));
+        name.erase(name.find_last_not_of(" \t") + 1);
+        if (!name.empty()) arraysToPrint.push_back(name);
+    }
+
+    // Validate file
+    if (!fileHandles.count(filenum) || !fileHandles[filenum].isFileOpen) {
+        std::cerr << "ERROR: File #" << filenum << " not open." << std::endl;
+        return;
+    }
+    std::ostream& out = *fileHandles[filenum].stream;
+
+    // For each array name, print all elements row by row
+    for (const auto& arrName : arraysToPrint) {
+        if (!arrays.count(arrName)) {
+            out << "[ERR: " << arrName << " undefined]\n";
+            continue;
+        }
+        const ArrayInfo& mat = arrays[arrName];
+        // Only support 2D for printing
+        if (mat.shape.size() != 2) {
+            out << "[ERR: " << arrName << " not 2D]\n";
+            continue;
+        }
+        int rows = mat.shape[0], cols = mat.shape[1];
+        for (int r = 0; r < rows; ++r) {
+            for (int c = 0; c < cols; ++c) {
+                std::vector<int> idx = {r, c};
+                ArgsInfo val = getSparseValue(arrName, idx);
+                if (val.isstring) out << val.s;
+                else               out << val.d;
+                if (c < cols - 1) out << " ";
+            }
+            out << "\n";
+=======
   std::string rest = line.substr(3);
   std::stringstream ss(rest);
   std::string varname, dims;
@@ -1104,10 +1916,15 @@ void executeMATPRINTFILE(const std::string& line) {
                 it->second.stream << indices[i];
             }
             it->second.stream << ") = " << value << std::endl;
+>>>>>>> 79fb27c (restarting interperter)
         }
     }
 }
 
+<<<<<<< HEAD
+
+=======
+>>>>>>> 79fb27c (restarting interperter)
 void executeREM(const std::string &) {}
 
 void executeSTOP(const std::string &) { std::exit(0); }
@@ -1201,6 +2018,89 @@ void executeON(const std::string &line) {
 }
 
 
+<<<<<<< HEAD
+<<<<<<< HEAD
+void executeMAT(const std::string& line) {
+    std::istringstream iss(line);
+    std::string cmd, sub;
+    iss >> cmd >> sub;  // cmd == "MAT", sub == next token
+
+    if (sub == "READ") {
+        // MAT READ X
+        executeMATREAD(line);
+    }
+    else if (sub == "PRINT") {
+        // MAT PRINT  …  could be console or file
+        // Peek past “PRINT”
+        iss >> std::ws;
+        if (iss.peek() == '#') {
+            // MAT PRINT #n, A, B…
+            executeMATPRINTFILE(line);
+        } else {
+            // MAT PRINT A, B…
+            executeMATPRINT(line);
+        }
+    }
+    else {
+        // MAT <target> = <expr>
+        std::string target = sub, eq;
+        iss >> eq;              // consume “=”
+        std::string expr;
+        std::getline(iss, expr);
+        expr.erase(0, expr.find_first_not_of(" \t"));
+        evaluateMATExpression(target, expr);
+    }
+}
+
+void executeMATREAD(const std::string& line) {
+    std::istringstream iss(line);
+    std::string cmd, readWord, name;
+    iss >> cmd >> readWord >> name;  // “MAT READ A”
+
+    if (!arrays.count(name)) {
+        std::cerr << "ERROR: MAT READ undefined matrix " << name << "\n";
+        return;
+    }
+    ArrayInfo& mat = arrays[name];
+
+    // Compute total elements
+    size_t total = 1;
+    for (int d : mat.shape) total *= d;
+
+    // Temp index vector
+    std::vector<int> idx(mat.shape.size());
+
+    // Fill row-major order
+    for (size_t n = 0; n < total; ++n) {
+        // Convert flat n → multidimensional idx[]
+        size_t rem = n;
+        for (int dim = int(mat.shape.size()) - 1; dim >= 0; --dim) {
+            idx[dim] = rem % mat.shape[dim];
+            rem /= mat.shape[dim];
+        }
+
+        // Fetch next DATA item
+        ArgsInfo v = getNextData();
+
+        // Assign into dense or sparse, numeric or string
+        if (!mat.data.empty()) {
+            // Dense numeric
+            mat.data[n] = v.isstring ? 0.0 : v.d;
+        } else {
+            // Sparse numeric
+            if (!v.isstring)
+                mat.sparse[idx] = v.d;
+        }
+        if (v.isstring) {
+            // Store string regardless of dense/sparse
+            mat.stringSparse[idx] = v.s;
+        }
+    }
+}
+
+=======
+>>>>>>> ace41c3 (update pclasss parse...)
+=======
 void executeMAT(const std::string& line) {
     std::istringstream iss(line);
     std::string cmd, target, equals;
@@ -1211,6 +2111,7 @@ void executeMAT(const std::string& line) {
     evaluateMATExpression(target, expression);
 }
 
+>>>>>>> 79fb27c (restarting interperter)
 
 
 std::string STRINGFORMAT(const std::string &s, const std::string &formatField) {
@@ -1666,6 +2567,154 @@ void executeMAT(const std::string& line) {
     evaluateMATExpression(target, expression);
 }
 
+<<<<<<< HEAD
+// ─────────────────────────────────────────────────────────────────────────────
+// Reads DATA statements into a previously DIM’d matrix (numeric only).
+// Usage in BASIC:  MAT READ A
+// It will collect all DATA values in program order and load them into A.
+
+void executeMATREAD(const std::string& line) {
+    std::istringstream iss(line);
+    std::string cmd, name;
+    iss >> cmd >> name;  // cmd == "MAT", next token is "READ", then name?
+    // Some implementations write "MAT READ A". If yours uses that form:
+    if (name == "READ") {
+        iss >> name;
+    }
+
+    auto it = arrays.find(name);
+    if (it == arrays.end()) {
+        std::cerr << "ERROR: MAT READ on undefined matrix: " << name << std::endl;
+        return;
+    }
+    ArrayInfo &mat = it->second;
+
+    // Compute total elements = product of dimensions
+    size_t total = 1;
+    for (int d : mat.shape) {
+        total *= d;
+    }
+
+    // Gather all DATA values
+    std::vector<double> values;
+    for (const auto &p : programSource) {
+        std::istringstream ds(p.second);
+        std::string kw;
+        ds >> kw;
+        if (kw == "DATA") {
+            std::string rest;
+            std::getline(ds, rest);
+            std::stringstream vs(rest);
+            std::string token;
+            while (std::getline(vs, token, ',')) {
+                // trim
+                token.erase(0, token.find_first_not_of(" \t"));
+                token.erase(token.find_last_not_of(" \t") + 1);
+                try {
+                    values.push_back(std::stod(token));
+                } catch (...) {
+                    values.push_back(0.0);
+                }
+            }
+        }
+    }
+
+    if (values.size() < total) {
+        std::cerr << "ERROR: MAT READ, not enough DATA values ("
+                  << values.size() << " available for "
+                  << total << " elements)" << std::endl;
+        return;
+    }
+
+    // Load into dense storage (row-major)
+    mat.data.clear();
+    mat.data.reserve(total);
+    for (size_t i = 0; i < total; ++i) {
+        mat.data.push_back(values[i]);
+    }
+}
+
+void executeMATPRINT(const std::string& line) {
+    // Expect line of form “MAT PRINT A, B$, C”
+    std::istringstream iss(line);
+    std::string matKw, printKw;
+    iss >> matKw >> printKw; // “MAT” and “PRINT”
+
+    // Collect the matrix names
+    std::vector<std::string> arraysToPrint;
+    std::string name;
+    while (std::getline(iss, name, ',')) {
+        name.erase(0, name.find_first_not_of(" \t"));
+        name.erase(name.find_last_not_of(" \t") + 1);
+        if (!name.empty()) arraysToPrint.push_back(name);
+    }
+
+    // For each matrix, print all elements row by row
+    for (const auto& arrName : arraysToPrint) {
+        if (!arrays.count(arrName)) {
+            std::cout << "[ERR: " << arrName << " undefined]\n";
+            continue;
+        }
+        const ArrayInfo& mat = arrays.at(arrName);
+        if (mat.shape.size() != 2) {
+            std::cout << "[ERR: " << arrName << " not 2D]\n";
+            continue;
+        }
+        int rows = mat.shape[0], cols = mat.shape[1];
+        std::cout << "Matrix " << arrName << " (" << rows << "×" << cols << "):\n";
+        for (int r = 0; r < rows; ++r) {
+            for (int c = 0; c < cols; ++c) {
+                std::vector<int> idx = {r, c};
+                // getSparseValue handles dense vs sparse, numeric vs string
+                ArgsInfo v = getSparseValue(arrName, idx);
+                if (v.isstring)        std::cout << v.s;
+                else                   std::cout << v.d;
+                if (c < cols - 1)      std::cout << "\t";
+            }
+            std::cout << "\n";
+        }
+        std::cout << "\n";
+    }
+}
+
+
+
+// Restore DATA pointer
+void executeRESTORE(const std::string&) {
+    dataPointer = 0;
+}
+
+// Parse DATA statements into the buffer
+void executeDATA(const std::string& line) {
+    // Remove leading "DATA"
+    std::string rest = line.substr(4);
+    // Split on commas
+    std::stringstream ss(rest);
+    std::string token;
+    while (std::getline(ss, token, ',')) {
+        // Trim whitespace
+        token.erase(0, token.find_first_not_of(" \t"));
+        token.erase(token.find_last_not_of(" \t") + 1);
+        if (token.size() >= 2 && token.front() == '\"' && token.back() == '\"') {
+            // String literal
+            std::string content = token.substr(1, token.size() - 2);
+            dataBuffer.push_back(makeArgsInfo(currentline, "", true, content, 0.0));
+        } else {
+            // Numeric value
+            double val = 0.0;
+            try {
+                val = std::stod(token);
+            } catch (...) {
+                std::cerr << "ERROR: Invalid DATA value: " << token
+                          << " on line " << currentline << std::endl;
+            }
+            dataBuffer.push_back(makeArgsInfo(currentline, "", false, "", val));
+        }
+    }
+}
+
+
+=======
 void executeMATREAD(const std::string& line) {
     std::istringstream iss(line);
     std::string cmd, readWord, arrayName;
@@ -1802,6 +2851,7 @@ void evaluateMATExpression(const std::string& target, const std::string& express
     }
 }
 
+>>>>>>> 79fb27c (restarting interperter)
 // ========================= Dispatcher =========================
 
 enum StatementType {
@@ -1835,7 +2885,12 @@ enum StatementType {
   ST_WEND,
   ST_REPEAT,
   ST_UNTIL,
+<<<<<<< HEAD
+  ST_SEED,
+  ST_MATREAD
+=======
   ST_SEED
+>>>>>>> 79fb27c (restarting interperter)
 };
 
 StatementType identifyStatement(const std::string &keyword) {
@@ -1899,6 +2954,11 @@ StatementType identifyStatement(const std::string &keyword) {
     return ST_UNTIL;
   if (keyword == "SEED")
     return ST_SEED;
+<<<<<<< HEAD
+  if (keyword=="MAT READ”)
+    return ST_MATREAD;
+=======
+>>>>>>> 79fb27c (restarting interperter)
   return ST_UNKNOWN;
 }
 
@@ -2005,6 +3065,11 @@ void runInterpreter(const std::map<int, std::string> &programSource) {
     case ST_SEED:
       executeSEED(it->second);
       break;
+<<<<<<< HEAD
+    case ST_MATREAD: executeMATREAD(it->second); break;
+
+=======
+>>>>>>> 79fb27c (restarting interperter)
     default:
       return "Unhandled statement: " << it->second << std::endl;
     }

@@ -1,5 +1,5 @@
-#include "fileio.h"
-#include <filesystem>
+#include <unistd.h>
+#include <limits.h>
 #include "interpreter.h"
 #include "syntax.h"
 #include <algorithm>
@@ -9,49 +9,14 @@
 #include <map>
 #include <sstream>
 #include <string>
-
 #include "program_structure.h"
-
+#include "renumber.h"    // ← include the new header
 extern PROGRAM_STRUCTURE program;
 
-void handleRENUMBER(int newStart, int delta, int oldStart) {
-    if (program.programSource.empty()) {
-        std::cerr << "ERROR: No program loaded.\n";
-        return;
-    }
-
-    std::map<int, std::string> newSource;
-    std::map<int, int> lineMapping;
-    int nextLine = newStart;
-
-    for (const auto& [line, code] : program.programSource) {
-        if (line >= oldStart) {
-            lineMapping[line] = nextLine;
-            nextLine += delta;
-        } else {
-            lineMapping[line] = line;
-        }
-    }
-
-    for (const auto& [oldLine, code] : program.programSource) {
-        int newLine = lineMapping[oldLine];
-        std::string updatedCode = code;
-
-        std::regex re(R"(\b(?:GOTO|GOSUB|THEN|PRINT\s+USING)\s+(\d+))", std::regex::icase);
-        updatedCode = std::regex_replace(updatedCode, re, [&](const std::smatch& m) {
-            int oldRef = std::stoi(m[1].str());
-            if (lineMapping.count(oldRef)) {
-                return m.str().substr(0, m.position(1) - m.position(0)) + std::to_string(lineMapping[oldRef]);
-            }
-            return m.str();
-        });
-
-        newSource[newLine] = updatedCode;
-    }
-
-    program.programSource = std::move(newSource);
-    std::cout << "RENUMBER complete.\n";
-}
+//
+//=======================================================================
+//  Inline support
+//
 
 void interactiveLoop() {
   std::string input;
@@ -70,8 +35,7 @@ void interactiveLoop() {
     } else if (command == "LOAD") {
       std::string filename;
       iss >> filename;
-      program.filename = filename;
-    load(program);
+      load(filename);
     } 
     else if (command == "RENUMBER") {
         int newStart = 10, delta = 10, oldStart = 0;
@@ -120,11 +84,10 @@ void interactiveLoop() {
       std::string filename;
       if (iss >> filename) {
         program.programSource.clear();
-        program.filename = filename;
-    load(program);
+        load(filename);
       }
       try {
-        runInterpreter(program);
+        runInterpreter(program.programSource);
       } catch (const std::runtime_error &e) {
         std::cerr << "Runtime error: " << e.what() << std::endl;
       }
@@ -139,8 +102,7 @@ void interactiveLoop() {
 
   int main(int argc, char *argv[]) {
     if (argc > 1) {
-      program.filename = argv[1];
-    load(program);
+      load(argv[1]);
     }
     interactiveLoop();
     return 0;

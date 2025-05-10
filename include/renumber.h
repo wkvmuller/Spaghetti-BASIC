@@ -1,9 +1,17 @@
 #ifndef RENUMBER_H
 #define RENUMBER_H
 
-#include <string>
+#include "program_structure.h"
 #include <map>
+#include <string>
+#include <regex>
+#include <sstream>
+#include <iostream>
 
-void renumberSource(std::map<int, std::string>& program, int newStart = 10, int delta = 10, int oldStart = 0);
+// Renumber BASIC program lines and update line references
+// newStart: starting line number for renumbering
+// delta: increment between lines
+// oldStart: only renumber lines >= oldStart
+void handleRENUMBER(int newStart, int delta, int oldStart);
 
 #endif // RENUMBER_H

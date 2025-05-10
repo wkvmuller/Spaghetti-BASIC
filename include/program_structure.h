@@ -7,6 +7,8 @@
 #include <stack>
 #include <utility>
 
+const size_t DENSE_MATRIX_THRESHOLD = 10000;
+
 struct VarInfo {
     double numericValue = 0.0;
     std::string stringValue;
@@ -26,6 +28,16 @@ struct MatrixValue {
     std::vector<VarInfo> denseValues;
     bool isSparse = false;
     std::vector<int> dimensions;
+
+    void configureStorage(size_t totalElements) {
+        if (totalElements < DENSE_MATRIX_THRESHOLD) {
+            isSparse = false;
+            denseValues.resize(totalElements);
+        } else {
+            isSparse = true;
+            sparseValues.clear();
+        }
+    }
 };
 
 struct PROGRAM_STRUCTURE {
@@ -37,10 +49,12 @@ struct PROGRAM_STRUCTURE {
     size_t filesize_lines = 0;
 
     // Variables
-    std::map<std::string, VarInfo> variables;
+    std::map<std::string, VarInfo> numericVariables;
+    std::map<std::string, VarInfo> stringVariables;
 
     // Matrices
-    std::map<std::string, MatrixValue> matrices;
+    std::map<std::string, MatrixValue> numericMatrices;
+    std::map<std::string, MatrixValue> stringMatrices;
 
     // GOSUB stack
     std::stack<int> gosubStack;
@@ -48,14 +62,14 @@ struct PROGRAM_STRUCTURE {
     // Loop stack (FOR/NEXT, WHILE/WEND, REPEAT/UNTIL)
     std::stack<std::pair<std::string, int>> loopStack;
 
-    // DEF FN user-defined functions: name → expression string
+    // DEF FN user-defined functions
     std::map<std::string, std::string> userFunctions;
 
-    // DATA statement vector and pointer
+    // DATA statements
     std::vector<VarInfo> dataValues;
     size_t dataPointer = 0;
 
-    // PRINT USING formats: line number → format string
+    // PRINT USING formats
     std::map<int, std::string> printUsingFormats;
 };
 
