@@ -9,49 +9,13 @@
 #include <map>
 #include <sstream>
 #include <string>
+#include "renumber.h"
 
 #include "program_structure.h"
 
+extern void handleRENUMBER(int newStart, int delta, int oldStart);
 extern PROGRAM_STRUCTURE program;
-
-void handleRENUMBER(int newStart, int delta, int oldStart) {
-    if (program.programSource.empty()) {
-        std::cerr << "ERROR: No program loaded.\n";
-        return;
-    }
-
-    std::map<int, std::string> newSource;
-    std::map<int, int> lineMapping;
-    int nextLine = newStart;
-
-    for (const auto& [line, code] : program.programSource) {
-        if (line >= oldStart) {
-            lineMapping[line] = nextLine;
-            nextLine += delta;
-        } else {
-            lineMapping[line] = line;
-        }
-    }
-
-    for (const auto& [oldLine, code] : program.programSource) {
-        int newLine = lineMapping[oldLine];
-        std::string updatedCode = code;
-
-        std::regex re(R"(\b(?:GOTO|GOSUB|THEN|PRINT\s+USING)\s+(\d+))", std::regex::icase);
-        updatedCode = std::regex_replace(updatedCode, re, [&](const std::smatch& m) {
-            int oldRef = std::stoi(m[1].str());
-            if (lineMapping.count(oldRef)) {
-                return m.str().substr(0, m.position(1) - m.position(0)) + std::to_string(lineMapping[oldRef]);
-            }
-            return m.str();
-        });
-
-        newSource[newLine] = updatedCode;
-    }
-
-    program.programSource = std::move(newSource);
-    std::cout << "RENUMBER complete.\n";
-}
+void list(int start = 0, int end = INT_MAX);
 
 void interactiveLoop() {
   std::string input;
@@ -136,6 +100,18 @@ void interactiveLoop() {
       }
     }
   }
+
+
+// List lines between start and end
+void list(int start, int end) {
+    for (std::map<int, std::string>::const_iterator it = program.programSource.begin();
+         it != program.programSource.end(); ++it) {
+        int linenum = it->first;
+        if (linenum >= start && linenum <= end) {
+            std::cout << linenum << " " << it->second << std::endl;
+        }
+    }
+}
 
   int main(int argc, char *argv[]) {
     if (argc > 1) {

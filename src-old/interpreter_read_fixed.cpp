@@ -751,7 +751,7 @@ void runInterpreter(PROGRAM_STRUCTURE &program) {
       std::cout << "Executing line " << linenum << ": " << code << std::endl;
       // TODO: Add interpreter logic here
       std::string keyword = code.substr(code.find(" "));
-      std::cout<<"keyword("<<keyword<<")"<<std::endl;
+      std::cout<<"keyword("<<keyword<<")"<<std::endl
       
       StatementType stmt = identifyStatement(keyword);
       switch (stmt) {
@@ -851,7 +851,7 @@ void runInterpreter(PROGRAM_STRUCTURE &program) {
         executeMATREAD(code);
         break;
       default:
-        std::cout << "Unhandled statement: " << code << std::endl;
+        return "Unhandled statement: " << code << std::endl;
       }
     }
   }
