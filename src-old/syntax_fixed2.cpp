@@ -26,11 +26,11 @@ void checkSyntax(const std::map<int, std::string> &programSource) {
        it != programSource.end(); ++it) {
     int lineNumber = it->first;
     std::string line = it->second;
+    std::string upper = line;
+    for (size_t ui = 0; ui < upper.length(); ++ui) upper[ui] = toupper(upper[ui]);
     definedLines.insert(lineNumber);
 
-    std::string upper = line;
-for (size_t i = 0; i < upper.length(); ++i) upper[i] = toupper(upper[i]);
-std::regex dim_rgx(R"(DIM\s+\w+\s*\(([^\)]*)\))");
+    std::regex dim_rgx(R"(DIM\s+\w+\s*\(([^\)]*)\))");
     std::smatch dim_match;
     if (std::regex_search(upper, dim_match, dim_rgx)) {
       std::string dims = dim_match[1];
@@ -44,7 +44,13 @@ std::regex dim_rgx(R"(DIM\s+\w+\s*\(([^\)]*)\))");
                   << lineNumber << ": " << line << std::endl;
         ok = false;
       }
-    }std::regex ref_rgx(R"(\b(?:GOTO|THEN|GOSUB|PRINT\s+USING|PRINT\s+#\d+\s+USING)\s+(\d+))", std::regex::icase);
+    }
+
+    for (size_t i = 0; i < upper.length(); ++i)
+      upper[i] = toupper(upper[i]);
+
+    std::regex ref_rgx(R"(\b(?:GOTO|THEN|GOSUB|PRINT\s+USING|PRINT\s+#\d+\s+USING)\s+(\d+))");
+        R"((GOTO|THEN|GOSUB|PRINT\s+USING|PRINT\s+#\d+\s+USING)\s+(\d+))");
     std::smatch ref_match;
     std::string check = upper;
     while (std::regex_search(check, ref_match, ref_rgx)) {
@@ -156,10 +162,9 @@ std::regex dim_rgx(R"(DIM\s+\w+\s*\(([^\)]*)\))");
   }
 
   if (!controlStack.empty()) {
-    for (std::vector<std::string>::const_iterator it = controlStack.begin(); it != controlStack.end(); ++it) {
-      std::cout << "SYNTAX ERROR: Missing closing for " << *it << " block."
-                << std::endl;
-    }
+  for (std::vector<std::string>::const_iterator it = controlStack.begin(); it != controlStack.end(); ++it) {
+    std::cout << "SYNTAX ERROR: Missing closing for " << *it << " block." << std::endl;
+  }
     ok = false;
   }
 
