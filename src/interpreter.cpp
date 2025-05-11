@@ -369,29 +369,36 @@ void executeREAD(const std::string &line) {
     throw std::runtime_error("SYNTAX ERROR: Invalid READ: " + line);
 
   std::stringstream ss(m[1].str());
-  std::string tok;
-  while (std::getline(ss, tok, ',')) {
-    tok = std::regex_replace(tok, std::regex(R"(^\s+|\s+$)"), "");
-    bool wantsString = (tok.back() == '$');
-    std::string name = wantsString ? tok.substr(0, tok.size() - 1) : tok;
-
-    if (program.dataPointer >= program.dataValues.size())
-      throw std::runtime_error("RUNTIME ERROR: No more DATA");
-
-    VarInfo val = program.dataValues[program.dataPointer++];
-    if (wantsString) {
-            VarInfo &var = program.stringVariables[name];
-            var.stringValue = val.isString ? val.stringValue : std::to_string(val.numericValue);
-            var.isString = true;
-        } else {
-            VarInfo &var = program.numericVariables[name];
-            var.numericValue = !val.isString ? val.numericValue : std::stod(val.stringValue);
-            var.isString = false;
-        } else {
-      program.numericVariables[name] =
-          !val.isString ? val.numericValue : std::stod(val.stringValue);
-    }
-  }
+   std::string tok;
+   while (std::getline(ss, tok, ',')) {
+     tok = std::regex_replace(tok, std::regex(R"(^\s+|\s+$)"), "");
+     bool wantsString = (tok.back() == '$');
+     std::string name = wantsString
+                           ? tok.substr(0, tok.size() - 1)
+                           : tok;
+ 
+     if (program.dataPointer >= program.dataValues.size())
+       throw std::runtime_error("RUNTIME ERROR: No more DATA");
+ 
+     VarInfo val = program.dataValues[program.dataPointer++];
+     if (wantsString) {
+       // Allocate or fetch the VarInfo slot for this string var
+       VarInfo &var = program.stringVariables[name];
+       // Store the DATA value as a string
+       var.stringValue = val.isString
+                           ? val.stringValue
+                           : std::to_string(val.numericValue);
+       var.isString = true;
+     } else {
+       // Allocate or fetch the VarInfo slot for this numeric var
+       VarInfo &var = program.numericVariables[name];
+       // Store the DATA value as a number
+       var.numericValue = !val.isString
+                           ? val.numericValue
+                           : std::stod(val.stringValue);
+       var.isString = false;
+     }
+   }
 }
 
 // —————————————————————————————————————————————————————————
@@ -570,9 +577,6 @@ void executeFOR(const std::string &line) {
 void executeFORMAT(const std::string &) {
   std::cout << "Stub of FORMAT" << std::endl;
 }
-void executeGO(const std::string &line) {
-  std::cout << "Stub of GO" << std::endl;
-}
 void executeGOSUB(const std::string &line) {
   std::cout << "Stub of GOSUB" << std::endl;
 }
@@ -634,10 +638,11 @@ void executeUNTIL(const std::string &line) {
 void executeWEND(const std::string &) {
   std::cout << "Stub of WEND" << std::endl;
 }
-void executeWHILE(const std::string &line) {
-  std::cout << "Stub of WHILE" << std::endl;
-}
+void executeWHILE(const std::string &line) {  std::cout << "Stub of WHILE" << std::endl;}
 
+void executeGOTO(const std::string &line) {  std::cout << "Stub of GO" << std::endl;}
+
+void executeNEXT(const std::string &line) {  std::cout << "Stub of NEXT" << std::endl;}
 // ========================= Dispatcher =========================
 
 enum StatementType {
@@ -660,6 +665,7 @@ enum StatementType {
   ST_RETURN,
   ST_END,
   ST_ON,
+  ST_PRINTFILEUSING,
   ST_MAT,
   ST_FORMAT,
   ST_BEEP,
@@ -746,13 +752,13 @@ void runInterpreter(PROGRAM_STRUCTURE &program) {
     auto linenum = entry.first;
     auto code2 = entry.second;
     std::string code = code2;
-    
+
     {
       std::cout << "Executing line " << linenum << ": " << code << std::endl;
       // TODO: Add interpreter logic here
       std::string keyword = code.substr(code.find(" "));
-      std::cout<<"keyword("<<keyword<<")"<<std::endl;
-      
+      std::cout << "keyword(" << keyword << ")" << std::endl;
+
       StatementType stmt = identifyStatement(keyword);
       switch (stmt) {
       case ST_PRINTFILEUSING:
@@ -856,4 +862,3 @@ void runInterpreter(PROGRAM_STRUCTURE &program) {
     }
   }
 }
-

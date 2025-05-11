@@ -60,7 +60,10 @@ void interactiveLoop() {
         std::cerr << "ERROR: Cannot open file for writing: " << filename
                   << std::endl;
       } else {
-        for (const auto &[linenum, content] : program.programSource) {
+        for (std::map<int, std::string>::const_iterator it = program.programSource.begin();
+     it != program.programSource.end(); ++it) {
+    int linenum = it->first;
+    const std::string &content = it->second;
           outfile << linenum << " " << content << std::endl;
         }
         std::cout << "Saved " << program.programSource.size() << " lines to "
