@@ -694,18 +694,127 @@ void executePRINTFILEUSING(const std::string &line) {
   std::cout << "Stub of PRINTFILEUSING" << std::endl;
 }
 
-void executeREM(const std::string &) {
-  std::cout << "Stub of REM" << std::endl;
+// Helper to find a line in programSource or throw
+static std::map<int,std::string>::const_iterator findLine(int ln) {
+    auto it = program.programSource.find(ln);
+    if (it == program.programSource.end())
+        throw std::runtime_error("RUNTIME ERROR: Undefined line " + std::to_string(ln));
+    return it;
 }
+
+// —————————————————————————————————————————————
+// GOTO <n>
+// —————————————————————————————————————————————
+void executeGOTO(const std::string &line) {
+    static const std::regex rgx(R"(^\s*GOTO\s+(\d+)\s*$)", std::regex::icase);
+    std::smatch m;
+    if (!std::regex_match(line, m, rgx))
+        throw std::runtime_error("SYNTAX ERROR: Invalid GOTO: " + line);
+    int target = std::atoi(m[1].str().c_str());
+    // Verify target exists
+    findLine(target);
+    // Schedule the jump
+    program.nextLineNumber    = target;
+    program.nextLineNumberSet = true;
+}
+
+// —————————————————————————————————————————————
+// GOSUB <n>
+// —————————————————————————————————————————————
+void executeGOSUB(const std::string &line) {
+    static const std::regex rgx(R"(^\s*GOSUB\s+(\d+)\s*$)", std::regex::icase);
+    std::smatch m;
+    if (!std::regex_match(line, m, rgx))
+        throw std::runtime_error("SYNTAX ERROR: Invalid GOSUB: " + line);
+    if (program.gosubStack.size() >= 15)
+        throw std::runtime_error("RUNTIME ERROR: GOSUB nesting exceeds 15 levels");
+
+    int target = std::atoi(m[1].str().c_str());
+    // Verify target exists
+    findLine(target);
+
+    // Push return address (the *next* line) onto stack
+    extern int currentLine;
+    program.gosubStack.push_back(currentLine);
+
+    // Schedule jump
+    program.nextLineNumber    = target;
+    program.nextLineNumberSet = true;
+}
+
+// —————————————————————————————————————————————
+// RETURN
+// —————————————————————————————————————————————
+void executeRETURN(const std::string & /*line*/) {
+    if (program.gosubStack.empty())
+        throw std::runtime_error("RUNTIME ERROR: RETURN without GOSUB");
+    int retLine = program.gosubStack.back();
+    program.gosubStack.pop_back();
+    // Verify return line still exists
+    findLine(retLine);
+
+    program.nextLineNumber    = retLine;
+    program.nextLineNumberSet = true;
+}
+
+// —————————————————————————————————————————————
+// ON <expr> GOTO|GOSUB <list>
+// —————————————————————————————————————————————
+void executeON(const std::string &line) {
+    static const std::regex rgx(
+      R"(^\s*ON\s+(.+?)\s+(GOTO|GOSUB)\s+(\d+(?:\s*,\s*\d+)*)\s*$)",
+      std::regex::icase
+    );
+    std::smatch m;
+    if (!std::regex_match(line, m, rgx))
+        throw std::runtime_error("SYNTAX ERROR: Invalid ON: " + line);
+
+    // Evaluate the selector expression (1-based index)
+    double d = evalExpression(m[1].str());
+    int idx = static_cast<int>(d);
+    if (idx < 1) 
+        throw std::runtime_error("RUNTIME ERROR: ON index must be >=1");
+
+    // Build target list
+    std::vector<int> targets;
+    std::stringstream ss(m[3].str());
+    std::string tok;
+    while (std::getline(ss, tok, ',')) {
+        int t = std::atoi(tok.c_str());
+        // Verify each target exists
+        findLine(t);
+        targets.push_back(t);
+    }
+    if (idx > (int)targets.size())
+        throw std::runtime_error("RUNTIME ERROR: ON index out of range");
+
+    const std::string verb = m[2].str();
+    int chosen = targets[idx-1];
+
+    if (verb == "GOTO" || verb == "goto" || verb == "Goto") {
+        program.nextLineNumber    = chosen;
+        program.nextLineNumberSet = true;
+    } else {
+        // GOSUB branch
+        if (program.gosubStack.size() >= 15)
+            throw std::runtime_error("RUNTIME ERROR: GOSUB nesting exceeds 15 levels");
+        extern int currentLine;
+        program.gosubStack.push_back(currentLine);
+        program.nextLineNumber    = chosen;
+        program.nextLineNumberSet = true;
+    }
+}
+
+void executeREM(const std::string &) { }
+
 void executeREPEAT(const std::string &) {
   std::cout << "Stub of REPEAT" << std::endl;
 }
-void executeRETURN(const std::string &) {
-  std::cout << "Stub of RETURN" << std::endl;
-}
+
 void executeSEED(const std::string &line) {
   std::cout << "Stub of SEED" << std::endl;
 }
+
 void executeSTOP(const std::string &line) {
     throw std::runtime_error("RUNTIME ERROR: STOP encountered");
 }
@@ -716,8 +825,6 @@ void executeWEND(const std::string &) {
   std::cout << "Stub of WEND" << std::endl;
 }
 void executeWHILE(const std::string &line) {  std::cout << "Stub of WHILE" << std::endl;}
-
-void executeGOTO(const std::string &line) {  std::cout << "Stub of GO" << std::endl;}
 
 void executeNEXT(const std::string &line) {  std::cout << "Stub of NEXT" << std::endl;}
 // ========================= Dispatcher =========================
