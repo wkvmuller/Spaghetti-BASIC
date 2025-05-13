@@ -5,14 +5,12 @@
 #include <functional>
 #include <string>
 #include <vector>
-
-// Ensure you have:
-// #include "program_structure.h"
-// extern PROGRAM_STRUCTURE program;
+#include "program_structure.h"
+extern PROGRAM_STRUCTURE program;
 
 // Evaluates a BASIC expression and returns its value as double.
-// Supports variables, numeric literals, parentheses, +, -, *, /,
-// and built-in math functions like SIN, COS, TAN, etc.
+// Supports variables, numeric literals (with optional exponent), parentheses,
+// +, -, *, /, and built-in math functions.
 double evalExpression(const std::string &expr) {
     size_t pos = 0;
     auto skipWS = [&]() {
@@ -32,9 +30,7 @@ double evalExpression(const std::string &expr) {
             } else if (expr[pos] == '-') {
                 ++pos; skipWS();
                 value -= parseTerm();
-            } else {
-                break;
-            }
+            } else break;
             skipWS();
         }
         return value;
@@ -53,9 +49,7 @@ double evalExpression(const std::string &expr) {
                 double rhs = parseFactor();
                 if (rhs == 0.0) throw std::runtime_error("Division by zero");
                 value /= rhs;
-            } else {
-                break;
-            }
+            } else break;
             skipWS();
         }
         return value;
@@ -78,11 +72,21 @@ double evalExpression(const std::string &expr) {
             if (pos >= expr.size() || expr[pos] != ')')
                 throw std::runtime_error("Missing closing parenthesis");
             ++pos;
-        } else if (pos < expr.size() && (std::isdigit(expr[pos]) || expr[pos] == '.')) {
+        }
+        // Numeric literal with optional exponent
+        else if (pos < expr.size() && (std::isdigit(expr[pos]) || expr[pos] == '.')) {
             size_t start = pos;
+            // Integral and fractional part
             while (pos < expr.size() && (std::isdigit(expr[pos]) || expr[pos] == '.')) ++pos;
+            // Exponent part
+            if (pos < expr.size() && (expr[pos] == 'e' || expr[pos] == 'E')) {
+                ++pos;
+                if (pos < expr.size() && (expr[pos] == '+' || expr[pos] == '-')) ++pos;
+                while (pos < expr.size() && std::isdigit(expr[pos])) ++pos;
+            }
             value = std::stod(expr.substr(start, pos - start));
-        } else {
+        }
+        else {
             value = parsePrimary();
         }
 
@@ -116,7 +120,6 @@ double evalExpression(const std::string &expr) {
             if (pos >= expr.size() || expr[pos] != ')')
                 throw std::runtime_error("Missing closing parenthesis in call to " + id);
             ++pos;
-
             // Built-in math functions
             if (idUp == "SIN")      return std::sin(args[0]);
             if (idUp == "COS")      return std::cos(args[0]);
@@ -140,9 +143,6 @@ double evalExpression(const std::string &expr) {
             if (idUp == "RND")      return std::rand() / (double)RAND_MAX;
             if (idUp == "DEG2RAD")  return args[0] * M_PI / 180.0;
             if (idUp == "RAD2DEG")  return args[0] * 180.0 / M_PI;
-            if (idUp == "ASCII")    return args[0];
-            if (idUp == "VALUE")    return args[0];
-            // Add more functions as needed
             throw std::runtime_error("Unknown function: " + id);
         }
 

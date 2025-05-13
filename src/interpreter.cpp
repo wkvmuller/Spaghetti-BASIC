@@ -415,8 +415,10 @@ void executeRESTORE(const std::string & /*line*/) { program.dataPointer = 0; }
 
 void evaluateMATExpression(const std::string &target,
                            const std::string &expression);
-void executeBEEP(const std::string &) {
-  std::cout << "Stub of BEEP" << std::endl;
+                           
+// BEEP statement — emit a bell character
+void executeBEEP(const std::string & /*line*/) {
+    std::cout << '\a' << std::flush;
 }
 void executeCLOSE(const std::string &line) {
   std::cout << "Stub of CLOSE" << std::endl;
@@ -424,8 +426,8 @@ void executeCLOSE(const std::string &line) {
 void executeDEF(const std::string &) {
   std::cout << "Stub of DEF" << std::endl;
 }
-void executeEND(const std::string &) {
-  std::cout << "Stub of END" << std::endl;
+void executeEND(const std::string &line) {
+    throw std::runtime_error("RUNTIME ERROR: END of program");
 }
 
 // Assumes you have a helper to eval an arithmetic expression to an int:
@@ -704,8 +706,8 @@ void executeRETURN(const std::string &) {
 void executeSEED(const std::string &line) {
   std::cout << "Stub of SEED" << std::endl;
 }
-void executeSTOP(const std::string &) {
-  std::cout << "Stub of STOP" << std::endl;
+void executeSTOP(const std::string &line) {
+    throw std::runtime_error("RUNTIME ERROR: STOP encountered");
 }
 void executeUNTIL(const std::string &line) {
   std::cout << "Stub of UNTIL" << std::endl;
