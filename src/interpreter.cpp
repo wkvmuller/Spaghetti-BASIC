@@ -82,6 +82,9 @@ ArgsInfo makeArgsInfo(long long line, std::string idname,
 //             prototypes
 //
 
+double evalExpression(const std::string &expr);
+static std::string trim(const std::string &s);
+
 void evaluateMATExpression(const std::string &target,
                            const std::string &expression);
 void executeBEEP(const std::string &);
@@ -319,6 +322,10 @@ IdentifierReturn evaluateStringFunction(const std::string &name,
   temp.s = "";
   return temp;
 }
+
+// ========================= Expression Evaluator =========================
+//
+
 
 //
 //=========================================================================
@@ -608,15 +615,83 @@ void executeON(const std::string &line) {
 void executeOPEN(const std::string &line) {
   std::cout << "Stub of OPEN" << std::endl;
 }
-void executePRINT(const std::string &line) {
-  std::cout << "Stub of PRINT" << std::endl;
+
+
+void executePRINTexpr(const std::string &line) {
+    // Skip past the “PRINT” keyword
+    std::istringstream iss(line);
+    std::string kw;
+    iss >> kw;  // eats "PRINT"
+
+    // Peek at the next non-whitespace character
+    char c = iss.peek();
+    if (c == '#') {
+        // It’s the file-output form.  Pass the full line through.
+        // executePRINTFILEUSING could be chosen here if you detect “USING” later.
+        executePRINTFILE(line);
+    } else if (next == "USING") {
+        executePRINTFILEUSING(line);
+    } else {
+        // Normal console PRINT
+        executePRINT(line);
+    }
 }
+
+// Forward decls (you should have these elsewhere or adapt)
+double evalExpression(const std::string &expr);
+static std::string trim(const std::string &s);
+
+// PRINT handler
+void executePRINT(const std::string &line) {
+    // Match everything after PRINT
+    static const std::regex rgx(R"(^\s*PRINT\s+(.*)$)", std::regex::icase);
+    std::smatch m;
+    if (!std::regex_match(line, m, rgx)) {
+        throw std::runtime_error("SYNTAX ERROR: Invalid PRINT: " + line);
+    }
+
+    std::string list = m[1].str();
+    std::stringstream ss(list);
+    std::string item;
+    bool first = true;
+
+    while (std::getline(ss, item, ',')) {
+        item = trim(item);
+        if (!first) {
+            std::cout << ' ';
+        }
+        first = false;
+
+        // String literal?
+        if (item.size() >= 2 && item.front() == '"' && item.back() == '"') {
+            std::cout << item.substr(1, item.size() - 2);
+        } else {
+            // Numeric expression
+            double val = evalExpression(item);
+            // You can control formatting here (fixed, precision, etc.)
+            std::cout << val;
+        }
+    }
+
+    std::cout << std::endl;
+}
+
+// Example trim helper
+static std::string trim(const std::string &s) {
+    const char *WS = " \t\r\n";
+    size_t start = s.find_first_not_of(WS);
+    if (start == std::string::npos) return "";
+    size_t end = s.find_last_not_of(WS);
+    return s.substr(start, end - start + 1);
+}
+
 void executePRINTFILE(const std::string &line) {
   std::cout << "Stub of PRINTFILE" << std::endl;
 }
 void executePRINTFILEUSING(const std::string &line) {
   std::cout << "Stub of PRINTFILEUSING" << std::endl;
 }
+
 void executeREM(const std::string &) {
   std::cout << "Stub of REM" << std::endl;
 }
@@ -648,7 +723,7 @@ void executeNEXT(const std::string &line) {  std::cout << "Stub of NEXT" << std:
 enum StatementType {
   ST_UNKNOWN,
   ST_LET,
-  ST_PRINT,
+  ST_PRINTexpr,
   ST_INPUT,
   ST_GOTO,
   ST_IF,
@@ -671,7 +746,7 @@ enum StatementType {
   ST_BEEP,
   ST_OPEN,
   ST_CLOSE,
-  ST_PRINTFILE,
+  ST_PRINT,
   ST_INPUTFILE,
   ST_WHILE,
   ST_WEND,
@@ -685,7 +760,7 @@ StatementType identifyStatement(const std::string &keyword) {
   if (keyword == "LET")
     return ST_LET;
   if (keyword == "PRINT")
-    return ST_PRINT;
+    return ST_PRINTexpr;
   if (keyword == "INPUT")
     return ST_INPUT;
   if (keyword == "GOTO")
@@ -729,7 +804,7 @@ StatementType identifyStatement(const std::string &keyword) {
   if (keyword == "CLOSE")
     return ST_CLOSE;
   if (keyword == "PRINT#")
-    return ST_PRINTFILE;
+    return ST_PRINTexr;
   if (keyword == "INPUT#")
     return ST_INPUTFILE;
   if (keyword == "WHILE")
@@ -766,8 +841,8 @@ void runInterpreter(PROGRAM_STRUCTURE &program) {
       case ST_LET:
         executeLET(code);
         break;
-      case ST_PRINT:
-        executePRINT(code);
+      case ST_PRINTexpr:
+        executePRINTexpr(code);
         break;
       case ST_INPUT:
         executeINPUT(code);
@@ -833,7 +908,7 @@ void runInterpreter(PROGRAM_STRUCTURE &program) {
         executeCLOSE(code);
         break;
       case ST_PRINTFILE:
-        executePRINTFILE(code);
+        executePRINTexpr(code);
         break;
       case ST_INPUTFILE:
         executeINPUTFILE(code);
