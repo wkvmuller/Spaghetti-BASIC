@@ -1,13 +1,26 @@
 #ifndef PROGRAM_STRUCTURE_H
 #define PROGRAM_STRUCTURE_H
 
+#include <map>
+#include <memory>
+#include <fstream>
 #include <string>
 #include <map>
 #include <vector>
 #include <stack>
 #include <utility>
+#include <memory>
+#include <fstream>
+#include <memory>
+#include <fstream>
+#include <map>
 
 const size_t DENSE_MATRIX_THRESHOLD = 10000;
+
+struct FileHandle {
+    std::unique_ptr<std::fstream> stream;
+};
+
 
 struct VarInfo {
     double numericValue = 0.0;
@@ -43,11 +56,7 @@ struct MatrixValue {
 struct PROGRAM_STRUCTURE {
     // Program source
     std::map<int, std::string> programSource;
-    std::string filename;
-    std::string filepath;
-    size_t filesize_bytes = 0;
-    size_t filesize_lines = 0;
-
+   
     // Variables
     std::map<std::string, VarInfo> numericVariables;
     std::map<std::string, VarInfo> stringVariables;
@@ -57,23 +66,38 @@ struct PROGRAM_STRUCTURE {
     std::map<std::string, MatrixValue> stringMatrices;
 
     // GOSUB stack
-    std::stack<int> gosubStack;
+    std::vector<int> gosubStack;
 
     // Loop stack (FOR/NEXT, WHILE/WEND, REPEAT/UNTIL)
-    std::stack<std::pair<std::string, int>> loopStack;
+    std::vector<std::pair<std::string, int>> loopStack;
 
     // DEF FN user-defined functions
     std::map<std::string, std::string> userFunctions;
 
     // DATA statements
     std::vector<VarInfo> dataValues;
-    size_t dataPointer = 0;
+
 
     // PRINT USING formats
     std::map<int, std::string> printUsingFormats;
+    
+// File‐I/O channels
+  std::map<int, FileHandle> fileHandles;
+  
+      std::string filename;
+    std::string filepath;
+    size_t filesize_bytes = 0;
+    size_t filesize_lines = 0;
+    size_t nextLineNumber = 0;
+    size_t nextLineNumberSet = 0;
+    size_t dataPointer = 0;    
+ 
 };
 
 // Declare the global instance
 extern PROGRAM_STRUCTURE program;
+
+extern int currentLine;
+
 
 #endif // PROGRAM_STRUCTURE_H

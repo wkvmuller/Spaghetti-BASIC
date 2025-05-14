@@ -14,7 +14,10 @@
 #include "program_structure.h"
 
 extern void handleRENUMBER(int newStart, int delta, int oldStart);
+extern void executeOPEN(const std::string &line);
+
 extern PROGRAM_STRUCTURE program;
+//PROGRAM_STRUCTURE program;
 void list(int start = 0, int end = INT_MAX);
 
 void interactiveLoop() {

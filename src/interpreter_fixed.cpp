@@ -4,7 +4,6 @@
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
-#include <fstream>
 #include <map>
 #include <regex>
 #include <sstream>
@@ -13,8 +12,7 @@
 #include <string>
 
 extern PROGRAM_STRUCTURE program;
- 
-extern int currentLine;
+
 //
 //--------------------------------------------------------------------------------
 //            Global Variables, structs, etc & helper functions.
@@ -335,51 +333,6 @@ IdentifierReturn evaluateStringFunction(const std::string &name,
 //
 
 // extern PROGRAM_STRUCTURE program;
-// OPEN statement: OPEN "filename" FOR INPUT|OUTPUT|APPEND AS #<channel>
-void executeOPEN(const std::string &line) {
-static const std::regex rgx(
-    "^\\s*OPEN\\s*\"([^\"]+)\"\\s+FOR\\s+(INPUT|OUTPUT|APPEND)\\s+AS\\s*#\\s*(\\d+)\\s*$",
-    std::regex::icase
-);
-
-    std::smatch m;
-    if (!std::regex_match(line, m, rgx))
-        throw std::runtime_error("SYNTAX ERROR: Invalid OPEN: " + line);
-
-    std::string path = m[1].str();
-    std::string mode = m[2].str();
-    int chan        = std::stoi(m[3].str());
-
-    std::ios_base::openmode om;
-    if (mode == "INPUT")   om = std::ios::in;
-    else if (mode == "OUTPUT") om = std::ios::out | std::ios::trunc;
-    else                     om = std::ios::out | std::ios::app;
-
-    // Create or overwrite the stream on that channel
-    auto &fh = program.fileHandles[chan];
-    fh.stream.reset(new std::fstream(path, om));
-    if (!fh.stream->is_open())
-        throw std::runtime_error("RUNTIME ERROR: Cannot open file: " + path);
-}
-
-//statement: CLOSE #<channel>
-void executeCLOSE(const std::string &line) {
-    static const std::regex rgx(
-      R"(^\s*CLOSE\s*#\s*(\d+)\s*$)",
-      std::regex::icase
-    );
-    std::smatch m;
-    if (!std::regex_match(line, m, rgx))
-        throw std::runtime_error("SYNTAX ERROR: Invalid CLOSE: " + line);
-
-    int chan = std::stoi(m[1].str());
-    auto it = program.fileHandles.find(chan);
-    if (it == program.fileHandles.end() || !it->second.stream)
-        throw std::runtime_error("RUNTIME ERROR: File not open on channel " + std::to_string(chan));
-
-    it->second.stream->close();
-    program.fileHandles.erase(it);
-}
 
 // —————————————————————————————————————————————————————————
 // DATA statement: parses DATA <datum>{,<datum>}
@@ -466,6 +419,9 @@ void evaluateMATExpression(const std::string &target,
 // BEEP statement — emit a bell character
 void executeBEEP(const std::string & /*line*/) {
     std::cout << '\a' << std::flush;
+}
+void executeCLOSE(const std::string &line) {
+  std::cout << "Stub of CLOSE" << std::endl;
 }
 void executeDEF(const std::string &) {
   std::cout << "Stub of DEF" << std::endl;
@@ -772,7 +728,7 @@ void executeGOSUB(const std::string &line) {
 
     // Push return address (the *next* line) onto stack
   //  extern int currentLine;
-      program.gosubStack.push_back(currentLine);
+    program.gosubStack.push_back(program.currentLine);
 
     // Schedule jump
     program.nextLineNumber    = target;
@@ -835,7 +791,7 @@ void executeON(const std::string &line) {
         // GOSUB branch
         if (program.gosubStack.size() >= 15)
             throw std::runtime_error("RUNTIME ERROR: GOSUB nesting exceeds 15 levels");
-
+        extern int currentLine;
         program.gosubStack.push_back(currentLine);
         program.nextLineNumber    = chosen;
         program.nextLineNumberSet = true;
