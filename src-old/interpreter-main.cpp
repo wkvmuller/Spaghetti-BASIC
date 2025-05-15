@@ -10,7 +10,7 @@ void runInterpreter(const std::map<int, std::string> &programSource) {
 
     StatementType stmt = identifyStatement(keyword);
     switch (stmt) {
-    case ST_PRINTFILEUSING: 
+    case ST_PRINTFILEUSING:
       executePRINTFILEUSING(it->second);
     case ST_LET:
       executeLET(it->second);
@@ -102,11 +102,12 @@ void runInterpreter(const std::map<int, std::string> &programSource) {
     case ST_SEED:
       executeSEED(it->second);
       break;
-    case ST_MATREAD: executeMATREAD(it->second); break;
+    case ST_MATREAD:
+      executeMATREAD(it->second);
+      break;
 
     default:
       return "Unhandled statement: " << it->second << std::endl;
     }
   }
 }
-

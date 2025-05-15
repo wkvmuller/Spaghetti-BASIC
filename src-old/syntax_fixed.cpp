@@ -22,7 +22,8 @@ void checkSyntax(const std::map<int, std::string> &program.programSource) {
   std::vector<std::string> controlStack;
   bool ok = true;
 
-  for (std::map<int, std::string>::const_iterator it = program.programSource.begin();
+  for (std::map<int, std::string>::const_iterator it =
+           program.programSource.begin();
        it != program.programSource.end(); ++it) {
     int lineNumber = it->first;
     std::string line = it->second;
@@ -48,7 +49,9 @@ void checkSyntax(const std::map<int, std::string> &program.programSource) {
     for (size_t i = 0; i < upper.length(); ++i)
       upper[i] = toupper(upper[i]);
 
-    std::regex ref_rgx(R"(\b(?:GOTO|THEN|GOSUB|PRINT\s+USING|PRINT\s+#\d+\s+USING)\s+(\d+))", std::regex::icase);
+    std::regex ref_rgx(
+        R"(\b(?:GOTO|THEN|GOSUB|PRINT\s+USING|PRINT\s+#\d+\s+USING)\s+(\d+))",
+        std::regex::icase);
     std::smatch ref_match;
     std::string check = upper;
     while (std::regex_search(check, ref_match, ref_rgx)) {

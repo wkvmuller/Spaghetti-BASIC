@@ -1,20 +1,19 @@
-#include "renumber.h"
-#include <unistd.h>
-#include <limits.h>
 #include "interpreter.h"
+#include "renumber.h"
 #include "syntax.h"
 #include <algorithm>
 #include <climits>
 #include <fstream>
 #include <iostream>
+#include <limits.h>
 #include <map>
 #include <sstream>
 #include <string>
+#include <unistd.h>
 
 #include "program_structure.h"
 
 extern PROGRAM_STRUCTURE program;
-
 
 void interactiveLoop() {
   std::string input;
@@ -34,20 +33,19 @@ void interactiveLoop() {
       std::string filename;
       iss >> filename;
       load(filename);
-    } 
-    else if (command == "RENUMBER") {
-        int newStart = 10, delta = 10, oldStart = 0;
-        char comma;
-        if (iss >> newStart) {
+    } else if (command == "RENUMBER") {
+      int newStart = 10, delta = 10, oldStart = 0;
+      char comma;
+      if (iss >> newStart) {
+        if (iss >> comma && comma == ',') {
+          if (iss >> delta) {
             if (iss >> comma && comma == ',') {
-                if (iss >> delta) {
-                    if (iss >> comma && comma == ',') {
-                        iss >> oldStart;
-                    }
-                }
+              iss >> oldStart;
             }
+          }
         }
-        handleRENUMBER(newStart, delta, oldStart);
+      }
+      handleRENUMBER(newStart, delta, oldStart);
     }
 
     else if (command == "SAVE") {
@@ -89,19 +87,18 @@ void interactiveLoop() {
       } catch (const std::runtime_error &e) {
         std::cerr << "Runtime error: " << e.what() << std::endl;
       }
-      } else if (command == "SYNTAX") {
-        checkSyntax(program.programSource);
-      }
-      else {
-        std::cout << "Unrecognized command: " << command << std::endl;
-      }
+    } else if (command == "SYNTAX") {
+      checkSyntax(program.programSource);
+    } else {
+      std::cout << "Unrecognized command: " << command << std::endl;
     }
   }
+}
 
-  int main(int argc, char *argv[]) {
-    if (argc > 1) {
-      load(argv[1]);
-    }
-    interactiveLoop();
-    return 0;
+int main(int argc, char *argv[]) {
+  if (argc > 1) {
+    load(argv[1]);
   }
+  interactiveLoop();
+  return 0;
+}

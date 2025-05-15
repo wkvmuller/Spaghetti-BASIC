@@ -3,6 +3,6 @@
 
 #include "program_structure_v3.h"
 
-void runInterpreter(PROGRAM_STRUCTURE& program);
+void runInterpreter(PROGRAM_STRUCTURE &program);
 
 #endif // INTERPRETER_H

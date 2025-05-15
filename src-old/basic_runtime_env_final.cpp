@@ -33,8 +33,8 @@ void load(const std::string &filename) {
       program.programSource[linenum] = remainder;
     }
   }
-  std::cout << "Loaded " << program.programSource.size() << " lines from " << filename
-            << std::endl;
+  std::cout << "Loaded " << program.programSource.size() << " lines from "
+            << filename << std::endl;
 }
 
 void list(int start = 0, int end = INT_MAX) {
@@ -47,44 +47,46 @@ void list(int start = 0, int end = INT_MAX) {
   }
 }
 
-
 void handleRENUMBER(int newStart, int delta, int oldStart) {
-    if (program.programSource.empty()) {
-        std::cerr << "ERROR: No program loaded.\n";
-        return;
+  if (program.programSource.empty()) {
+    std::cerr << "ERROR: No program loaded.\n";
+    return;
+  }
+
+  std::map<int, std::string> newSource;
+  std::map<int, int> lineMapping;
+  int nextLine = newStart;
+
+  for (const auto &[line, code] : program.programSource) {
+    if (line >= oldStart) {
+      lineMapping[line] = nextLine;
+      nextLine += delta;
+    } else {
+      lineMapping[line] = line;
     }
+  }
 
-    std::map<int, std::string> newSource;
-    std::map<int, int> lineMapping;
-    int nextLine = newStart;
+  for (const auto &[oldLine, code] : program.programSource) {
+    int newLine = lineMapping[oldLine];
+    std::string updatedCode = code;
 
-    for (const auto& [line, code] : program.programSource) {
-        if (line >= oldStart) {
-            lineMapping[line] = nextLine;
-            nextLine += delta;
-        } else {
-            lineMapping[line] = line;
-        }
-    }
-
-    for (const auto& [oldLine, code] : program.programSource) {
-        int newLine = lineMapping[oldLine];
-        std::string updatedCode = code;
-
-        std::regex re(R"(\b(?:GOTO|GOSUB|THEN|PRINT\s+USING)\s+(\d+))", std::regex::icase);
-        updatedCode = std::regex_replace(updatedCode, re, [&](const std::smatch& m) {
-            int oldRef = std::stoi(m[1].str());
-            if (lineMapping.count(oldRef)) {
-                return m.str().substr(0, m.position(1) - m.position(0)) + std::to_string(lineMapping[oldRef]);
-            }
-            return m.str();
+    std::regex re(R"(\b(?:GOTO|GOSUB|THEN|PRINT\s+USING)\s+(\d+))",
+                  std::regex::icase);
+    updatedCode =
+        std::regex_replace(updatedCode, re, [&](const std::smatch &m) {
+          int oldRef = std::stoi(m[1].str());
+          if (lineMapping.count(oldRef)) {
+            return m.str().substr(0, m.position(1) - m.position(0)) +
+                   std::to_string(lineMapping[oldRef]);
+          }
+          return m.str();
         });
 
-        newSource[newLine] = updatedCode;
-    }
+    newSource[newLine] = updatedCode;
+  }
 
-    program.programSource = std::move(newSource);
-    std::cout << "RENUMBER complete.\n";
+  program.programSource = std::move(newSource);
+  std::cout << "RENUMBER complete.\n";
 }
 
 void interactiveLoop() {
@@ -105,20 +107,19 @@ void interactiveLoop() {
       std::string filename;
       iss >> filename;
       load(filename);
-    } 
-    else if (command == "RENUMBER") {
-        int newStart = 10, delta = 10, oldStart = 0;
-        char comma;
-        if (iss >> newStart) {
+    } else if (command == "RENUMBER") {
+      int newStart = 10, delta = 10, oldStart = 0;
+      char comma;
+      if (iss >> newStart) {
+        if (iss >> comma && comma == ',') {
+          if (iss >> delta) {
             if (iss >> comma && comma == ',') {
-                if (iss >> delta) {
-                    if (iss >> comma && comma == ',') {
-                        iss >> oldStart;
-                    }
-                }
+              iss >> oldStart;
             }
+          }
         }
-        handleRENUMBER(newStart, delta, oldStart);
+      }
+      handleRENUMBER(newStart, delta, oldStart);
     }
 
     else if (command == "SAVE") {
@@ -160,19 +161,18 @@ void interactiveLoop() {
       } catch (const std::runtime_error &e) {
         std::cerr << "Runtime error: " << e.what() << std::endl;
       }
-      } else if (command == "SYNTAX") {
-        checkSyntax(program.programSource);
-      }
-      else {
-        std::cout << "Unrecognized command: " << command << std::endl;
-      }
+    } else if (command == "SYNTAX") {
+      checkSyntax(program.programSource);
+    } else {
+      std::cout << "Unrecognized command: " << command << std::endl;
     }
   }
+}
 
-  int main(int argc, char *argv[]) {
-    if (argc > 1) {
-      load(argv[1]);
-    }
-    interactiveLoop();
-    return 0;
+int main(int argc, char *argv[]) {
+  if (argc > 1) {
+    load(argv[1]);
   }
+  interactiveLoop();
+  return 0;
+}

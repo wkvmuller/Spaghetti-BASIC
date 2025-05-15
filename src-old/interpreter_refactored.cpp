@@ -1,3 +1,4 @@
+#include "interpreter.h"
 #include "program_structure.h"
 #include <cctype>
 #include <cmath>
@@ -8,19 +9,20 @@
 #include <stack>
 #include <stdexcept>
 #include <string>
-#include "interpreter.h"
 
 //
 //--------------------------------------------------------------------------------
 //             prototypes
 //
 
-void evaluateMATExpression(const std::string& target, const std::string& expression);
+void evaluateMATExpression(const std::string &target,
+                           const std::string &expression);
 void executeBEEP(const std::string &);
 void executeBEEP(const std::string &);
-void executeCLOSE(const std::string& line);
+void executeCLOSE(const std::string &line);
 void executeDEF(const std::string &);
-void executeDEF(const std::string &);}
+void executeDEF(const std::string &);
+}
 void executeDIM(const std::string &line);
 void executeFOR(const std::string &line);
 void executeFORMAT(const std::string &);
@@ -28,30 +30,32 @@ void executeGO(const std::string &line);
 void executeGOSUB(const std::string &line);
 void executeIF(const std::string &);
 void executeINPUT(const std::string &line);
-void executeINPUTFILE(const std::string& line);
-void executeLET(const std::string& line);
-void executeMAT(const std::string& line);
-void executeMATPRINT(const std::string& line);
-void executeMATPRINTFILE(const std::string& line);
-void executeMATREAD(const std::string& line);
+void executeINPUTFILE(const std::string &line);
+void executeLET(const std::string &line);
+void executeMAT(const std::string &line);
+void executeMATPRINT(const std::string &line);
+void executeMATPRINTFILE(const std::string &line);
+void executeMATREAD(const std::string &line);
 void executeON(const std::string &line);
-void executeOPEN(const std::string& line);
-void executePRINT(const std::string& line);
-void executePRINTFILE(const std::string& line);
-void executePRINTFILEUSING(const std::string& line);
+void executeOPEN(const std::string &line);
+void executePRINT(const std::string &line);
+void executePRINTFILE(const std::string &line);
+void executePRINTFILEUSING(const std::string &line);
 void executeREM(const std::string &);
-void executeREM(const std::string &);}
-void executeREPEAT(const std::string&);
+void executeREM(const std::string &);
+}
+void executeREPEAT(const std::string &);
 void executeRETURN(const std::string &);
-void executeSEED(const std::string& line);
+void executeSEED(const std::string &line);
 void executeSTOP(const std::string &);
 void executeSTOP(const std::string &);
-void executeUNTIL(const std::string& line);
-void executeWEND(const std::string&);
-void executeWHILE(const std::string& line);
-void setSparseValue(const std::string& name, const std::vector<int>& idx, const ArgsInfo& value);
-void sparseMultiplyScalar(ArrayInfo& matrix, double scalar);
-void sparseTrim(ArrayInfo& matrix);
+void executeUNTIL(const std::string &line);
+void executeWEND(const std::string &);
+void executeWHILE(const std::string &line);
+void setSparseValue(const std::string &name, const std::vector<int> &idx,
+                    const ArgsInfo &value);
+void sparseMultiplyScalar(ArrayInfo &matrix, double scalar);
+void sparseTrim(ArrayInfo &matrix);
 
 //
 //--------------------------------------------------------------------------------
@@ -233,7 +237,7 @@ void runInterpreter(const std::map<int, std::string> &programSource) {
 
     StatementType stmt = identifyStatement(keyword);
     switch (stmt) {
-    case ST_PRINTFILEUSING: 
+    case ST_PRINTFILEUSING:
       executePRINTFILEUSING(it->second);
     case ST_LET:
       executeLET(it->second);
@@ -326,7 +330,9 @@ void runInterpreter(const std::map<int, std::string> &programSource) {
       executeSEED(it->second);
       break;
 
-    case ST_MATREAD: executeMATREAD(it->second); break;
+    case ST_MATREAD:
+      executeMATREAD(it->second);
+      break;
 
     default:
       return "Unhandled statement: " << it->second << std::endl;
@@ -334,11 +340,9 @@ void runInterpreter(const std::map<int, std::string> &programSource) {
   }
 }
 
-
-
-void runInterpreter(PROGRAM_STRUCTURE& program) {
-    for (const auto& [linenum, code] : program.programSource) {
-        std::cout << "Executing line " << linenum << ": " << code << std::endl;
-        // TODO: Add interpreter logic here
-    }
+void runInterpreter(PROGRAM_STRUCTURE &program) {
+  for (const auto &[linenum, code] : program.programSource) {
+    std::cout << "Executing line " << linenum << ": " << code << std::endl;
+    // TODO: Add interpreter logic here
+  }
 }

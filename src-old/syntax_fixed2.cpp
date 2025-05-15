@@ -27,7 +27,8 @@ void checkSyntax(const std::map<int, std::string> &programSource) {
     int lineNumber = it->first;
     std::string line = it->second;
     std::string upper = line;
-    for (size_t ui = 0; ui < upper.length(); ++ui) upper[ui] = toupper(upper[ui]);
+    for (size_t ui = 0; ui < upper.length(); ++ui)
+      upper[ui] = toupper(upper[ui]);
     definedLines.insert(lineNumber);
 
     std::regex dim_rgx(R"(DIM\s+\w+\s*\(([^\)]*)\))");
@@ -49,109 +50,111 @@ void checkSyntax(const std::map<int, std::string> &programSource) {
     for (size_t i = 0; i < upper.length(); ++i)
       upper[i] = toupper(upper[i]);
 
-    std::regex ref_rgx(R"(\b(?:GOTO|THEN|GOSUB|PRINT\s+USING|PRINT\s+#\d+\s+USING)\s+(\d+))");
+    std::regex ref_rgx(
+        R"(\b(?:GOTO|THEN|GOSUB|PRINT\s+USING|PRINT\s+#\d+\s+USING)\s+(\d+))");
         R"((GOTO|THEN|GOSUB|PRINT\s+USING|PRINT\s+#\d+\s+USING)\s+(\d+))");
-    std::smatch ref_match;
-    std::string check = upper;
-    while (std::regex_search(check, ref_match, ref_rgx)) {
-      try {
-        referencedLines.insert(std::stoi(ref_match[2].str()));
-      } catch (...) {
-      }
-      check = ref_match.suffix().str();
-    }
-
-    std::regex on_rgx(R"(ON\s+\w+\s+(GOTO|GOSUB)\s+([\d,]+))");
-    std::smatch on_match;
-    check = upper;
-    while (std::regex_search(check, on_match, on_rgx)) {
-      std::stringstream ss(on_match[2]);
-      std::string num;
-      while (std::getline(ss, num, ',')) {
-        try {
-          referencedLines.insert(std::stoi(num));
-        } catch (...) {
+        std::smatch ref_match;
+        std::string check = upper;
+        while (std::regex_search(check, ref_match, ref_rgx)) {
+          try {
+            referencedLines.insert(std::stoi(ref_match[2].str()));
+          } catch (...) {
+          }
+          check = ref_match.suffix().str();
         }
-      }
-      check = on_match.suffix().str();
-    }
 
-    std::regex func_rgx(R"(([A-Z]+\$?)\s*\()");
-    std::smatch func_match;
-    check = upper;
-    while (std::regex_search(check, func_match, func_rgx)) {
-      std::string fname = func_match[1];
-      if (validMathFunctions.find(fname) == validMathFunctions.end() &&
-          validStringFunctions.find(fname) == validStringFunctions.end()) {
-        std::cout << "SYNTAX ERROR: Unknown function '" << fname << "' in line "
-                  << lineNumber << ": " << line << std::endl;
-        ok = false;
-      }
-      check = func_match.suffix().str();
-    }
+        std::regex on_rgx(R"(ON\s+\w+\s+(GOTO|GOSUB)\s+([\d,]+))");
+        std::smatch on_match;
+        check = upper;
+        while (std::regex_search(check, on_match, on_rgx)) {
+          std::stringstream ss(on_match[2]);
+          std::string num;
+          while (std::getline(ss, num, ',')) {
+            try {
+              referencedLines.insert(std::stoi(num));
+            } catch (...) {
+            }
+          }
+          check = on_match.suffix().str();
+        }
 
-    std::regex let_rgx(R"(^LET\s+\w+\s*=\s*.+)");
-    std::regex if_rgx(R"(^IF\s+.+\s+THEN\s+.+)");
-    std::regex input_rgx(R"(^INPUT(\s+".*"\s*;\s*)?\s*\w+(\s*,\s*\w+)*)");
-    std::regex for_rgx(R"(^FOR\s+\w+\s*=\s*.+\s+TO\s+.+(\s+STEP\s+.+)?)");
-    std::regex next_rgx(R"(^NEXT\s+\w+)");
-    std::regex while_rgx(R"(^WHILE\s+.+)");
-    std::regex wend_rgx(R"(^WEND)");
-    std::regex repeat_rgx(R"(^REPEAT)");
-    std::regex until_rgx(R"(^UNTIL\s+.+)");
+        std::regex func_rgx(R"(([A-Z]+\$?)\s*\()");
+        std::smatch func_match;
+        check = upper;
+        while (std::regex_search(check, func_match, func_rgx)) {
+          std::string fname = func_match[1];
+          if (validMathFunctions.find(fname) == validMathFunctions.end() &&
+              validStringFunctions.find(fname) == validStringFunctions.end()) {
+            std::cout << "SYNTAX ERROR: Unknown function '" << fname
+                      << "' in line " << lineNumber << ": " << line
+                      << std::endl;
+            ok = false;
+          }
+          check = func_match.suffix().str();
+        }
 
-    auto check_match = [&](const std::regex &rgx,
-                           const std::string &tag) -> bool {
-      if (!std::regex_match(upper, rgx)) {
-        std::cout << "SYNTAX ERROR: Invalid " << tag << " syntax at line "
-                  << lineNumber << ": " << line << std::endl;
-        return false;
-      }
-      return true;
-    };
+        std::regex let_rgx(R"(^LET\s+\w+\s*=\s*.+)");
+        std::regex if_rgx(R"(^IF\s+.+\s+THEN\s+.+)");
+        std::regex input_rgx(R"(^INPUT(\s+".*"\s*;\s*)?\s*\w+(\s*,\s*\w+)*)");
+        std::regex for_rgx(R"(^FOR\s+\w+\s*=\s*.+\s+TO\s+.+(\s+STEP\s+.+)?)");
+        std::regex next_rgx(R"(^NEXT\s+\w+)");
+        std::regex while_rgx(R"(^WHILE\s+.+)");
+        std::regex wend_rgx(R"(^WEND)");
+        std::regex repeat_rgx(R"(^REPEAT)");
+        std::regex until_rgx(R"(^UNTIL\s+.+)");
 
-    if (upper.find("LET ") == 0)
-      ok &= check_match(let_rgx, "LET");
-    else if (upper.find("IF ") == 0)
-      ok &= check_match(if_rgx, "IF");
-    else if (upper.find("INPUT") == 0)
-      ok &= check_match(input_rgx, "INPUT");
-    else if (upper.find("FOR ") == 0)
-      ok &= check_match(for_rgx, "FOR");
-    else if (upper.find("NEXT") == 0)
-      ok &= check_match(next_rgx, "NEXT");
-    else if (upper.find("WHILE ") == 0) {
-      ok &= check_match(while_rgx, "WHILE");
-      controlStack.push_back("WHILE");
-      if (controlStack.size() > 15) {
-        std::cout << "SYNTAX ERROR: Loop nesting exceeds 15 levels at line "
-                  << lineNumber << ": " << line << std::endl;
-        ok = false;
-      }
-    } else if (upper == "WEND") {
-      if (!controlStack.empty() && controlStack.back() == "WHILE")
-        controlStack.pop_back();
-      else {
-        std::cout << "SYNTAX ERROR: WEND without matching WHILE at line "
-                  << lineNumber << ": " << line << std::endl;
-        ok = false;
-      }
-    } else if (upper == "REPEAT") {
-      controlStack.push_back("REPEAT");
-      if (controlStack.size() > 15) {
-        std::cout << "SYNTAX ERROR: Loop nesting exceeds 15 levels at line "
-                  << lineNumber << ": " << line << std::endl;
-        ok = false;
-      }
-    } else if (upper.find("UNTIL ") == 0) {
-      if (!controlStack.empty() && controlStack.back() == "REPEAT")
-        controlStack.pop_back();
-      else {
-        std::cout << "SYNTAX ERROR: UNTIL without matching REPEAT at line "
-                  << lineNumber << ": " << line << std::endl;
-        ok = false;
-      }
-    }
+        auto check_match = [&](const std::regex &rgx,
+                               const std::string &tag) -> bool {
+          if (!std::regex_match(upper, rgx)) {
+            std::cout << "SYNTAX ERROR: Invalid " << tag << " syntax at line "
+                      << lineNumber << ": " << line << std::endl;
+            return false;
+          }
+          return true;
+        };
+
+        if (upper.find("LET ") == 0)
+          ok &= check_match(let_rgx, "LET");
+        else if (upper.find("IF ") == 0)
+          ok &= check_match(if_rgx, "IF");
+        else if (upper.find("INPUT") == 0)
+          ok &= check_match(input_rgx, "INPUT");
+        else if (upper.find("FOR ") == 0)
+          ok &= check_match(for_rgx, "FOR");
+        else if (upper.find("NEXT") == 0)
+          ok &= check_match(next_rgx, "NEXT");
+        else if (upper.find("WHILE ") == 0) {
+          ok &= check_match(while_rgx, "WHILE");
+          controlStack.push_back("WHILE");
+          if (controlStack.size() > 15) {
+            std::cout << "SYNTAX ERROR: Loop nesting exceeds 15 levels at line "
+                      << lineNumber << ": " << line << std::endl;
+            ok = false;
+          }
+        } else if (upper == "WEND") {
+          if (!controlStack.empty() && controlStack.back() == "WHILE")
+            controlStack.pop_back();
+          else {
+            std::cout << "SYNTAX ERROR: WEND without matching WHILE at line "
+                      << lineNumber << ": " << line << std::endl;
+            ok = false;
+          }
+        } else if (upper == "REPEAT") {
+          controlStack.push_back("REPEAT");
+          if (controlStack.size() > 15) {
+            std::cout << "SYNTAX ERROR: Loop nesting exceeds 15 levels at line "
+                      << lineNumber << ": " << line << std::endl;
+            ok = false;
+          }
+        } else if (upper.find("UNTIL ") == 0) {
+          if (!controlStack.empty() && controlStack.back() == "REPEAT")
+            controlStack.pop_back();
+          else {
+            std::cout << "SYNTAX ERROR: UNTIL without matching REPEAT at line "
+                      << lineNumber << ": " << line << std::endl;
+            ok = false;
+          }
+        }
   }
 
   for (int ref : referencedLines) {
@@ -162,9 +165,11 @@ void checkSyntax(const std::map<int, std::string> &programSource) {
   }
 
   if (!controlStack.empty()) {
-  for (std::vector<std::string>::const_iterator it = controlStack.begin(); it != controlStack.end(); ++it) {
-    std::cout << "SYNTAX ERROR: Missing closing for " << *it << " block." << std::endl;
-  }
+    for (std::vector<std::string>::const_iterator it = controlStack.begin();
+         it != controlStack.end(); ++it) {
+      std::cout << "SYNTAX ERROR: Missing closing for " << *it << " block."
+                << std::endl;
+    }
     ok = false;
   }
 

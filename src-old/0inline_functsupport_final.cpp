@@ -1,10 +1,10 @@
 /
-//=======================================================================================
-//   inline functsupport
-//
+    //=======================================================================================
+    //   inline functsupport
+    //
 
-IdentifierReturn evaluateFunction(const std::string &name,
-                                  const std::vector<ArgsInfo> &args) {
+    IdentifierReturn evaluateFunction(const std::string &name,
+                                      const std::vector<ArgsInfo> &args) {
   IdentifierReturn temp;
 
   temp.isstring = false; //  all us of temp in this routine is returning a
@@ -33,9 +33,9 @@ IdentifierReturn evaluateFunction(const std::string &name,
     }
 
   if (name == "SIN" || name == "COS" || name == "TAN" || name == "SQR" ||
-          name == "STRING$" || name == "LOG" || name == "LOG10" ||
-          name == "CLOG" || name == "EXP" || name == "INT" || name == "ROUND" ||
-          name == "FLOOR" || name == "CEIL" | name == "RND")
+      name == "STRING$" || name == "LOG" || name == "LOG10" || name == "CLOG" ||
+      name == "EXP" || name == "INT" || name == "ROUND" || name == "FLOOR" ||
+      name == "CEIL" | name == "RND")
     if (args[0].isstring) {
       std::cerr << "Error on " << name
                 << " passing a string where number expected [" << args[0].s
@@ -114,43 +114,43 @@ IdentifierReturn evaluateFunction(const std::string &name,
     return temp;
   }
   if (name == "RND") {
-  if (name == "ASIN") {
-    temp.d = std::asin(args[0].d);
-    return temp;
-  }
-  if (name == "ACOS") {
-    temp.d = std::acos(args[0].d);
-    return temp;
-  }
-  if (name == "ATAN") {
-    temp.d = std::atan(args[0].d);
-    return temp;
-  }
-  if (name == "COT") {
-    temp.d = 1.0 / std::tan(args[0].d);
-    return temp;
-  }
-  if (name == "SEC") {
-    temp.d = 1.0 / std::cos(args[0].d);
-    return temp;
-  }
-  if (name == "CSC") {
-    temp.d = 1.0 / std::sin(args[0].d);
-    return temp;
-  }
-  if (name == "DEG2RAD") {
-    temp.d = args[0].d * M_PI / 180.0;
-    return temp;
-  }
-  if (name == "RAD2DEG") {
-    temp.d = args[0].d * 180.0 / M_PI;
-    return temp;
-  }
-  if (name == "DET") {
-    std::cerr << "DET() not implemented - placeholder only." << std::endl;
-    temp.d = 0.0;
-    return temp;
-  }
+    if (name == "ASIN") {
+      temp.d = std::asin(args[0].d);
+      return temp;
+    }
+    if (name == "ACOS") {
+      temp.d = std::acos(args[0].d);
+      return temp;
+    }
+    if (name == "ATAN") {
+      temp.d = std::atan(args[0].d);
+      return temp;
+    }
+    if (name == "COT") {
+      temp.d = 1.0 / std::tan(args[0].d);
+      return temp;
+    }
+    if (name == "SEC") {
+      temp.d = 1.0 / std::cos(args[0].d);
+      return temp;
+    }
+    if (name == "CSC") {
+      temp.d = 1.0 / std::sin(args[0].d);
+      return temp;
+    }
+    if (name == "DEG2RAD") {
+      temp.d = args[0].d * M_PI / 180.0;
+      return temp;
+    }
+    if (name == "RAD2DEG") {
+      temp.d = args[0].d * 180.0 / M_PI;
+      return temp;
+    }
+    if (name == "DET") {
+      std::cerr << "DET() not implemented - placeholder only." << std::endl;
+      temp.d = 0.0;
+      return temp;
+    }
     temp.d = static_cast<double>(rand()) / static_cast<double>(RAND_MAX);
     return temp;
   }

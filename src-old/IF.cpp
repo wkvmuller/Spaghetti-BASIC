@@ -14,12 +14,14 @@
 //             prototypes
 //
 
-void evaluateMATExpression(const std::string& target, const std::string& expression);
+void evaluateMATExpression(const std::string &target,
+                           const std::string &expression);
 void executeBEEP(const std::string &);
 void executeBEEP(const std::string &);
-void executeCLOSE(const std::string& line);
+void executeCLOSE(const std::string &line);
 void executeDEF(const std::string &);
-void executeDEF(const std::string &);}
+void executeDEF(const std::string &);
+}
 void executeDIM(const std::string &line);
 void executeFOR(const std::string &line);
 void executeFORMAT(const std::string &);
@@ -27,31 +29,32 @@ void executeGO(const std::string &line);
 void executeGOSUB(const std::string &line);
 void executeIF(const std::string &);
 void executeINPUT(const std::string &line);
-void executeINPUTFILE(const std::string& line);
-void executeLET(const std::string& line);
-void executeMAT(const std::string& line);
-void executeMATPRINT(const std::string& line);
-void executeMATPRINTFILE(const std::string& line);
-void executeMATREAD(const std::string& line);
+void executeINPUTFILE(const std::string &line);
+void executeLET(const std::string &line);
+void executeMAT(const std::string &line);
+void executeMATPRINT(const std::string &line);
+void executeMATPRINTFILE(const std::string &line);
+void executeMATREAD(const std::string &line);
 void executeON(const std::string &line);
-void executeOPEN(const std::string& line);
-void executePRINT(const std::string& line);
-void executePRINTFILE(const std::string& line);
-void executePRINTFILEUSING(const std::string& line);
+void executeOPEN(const std::string &line);
+void executePRINT(const std::string &line);
+void executePRINTFILE(const std::string &line);
+void executePRINTFILEUSING(const std::string &line);
 void executeREM(const std::string &);
-void executeREM(const std::string &);}
-void executeREPEAT(const std::string&);
+void executeREM(const std::string &);
+}
+void executeREPEAT(const std::string &);
 void executeRETURN(const std::string &);
-void executeSEED(const std::string& line);
+void executeSEED(const std::string &line);
 void executeSTOP(const std::string &);
 void executeSTOP(const std::string &);
-void executeUNTIL(const std::string& line);
-void executeWEND(const std::string&);
-void executeWHILE(const std::string& line);
-void setSparseValue(const std::string& name, const std::vector<int>& idx, const ArgsInfo& value);
-void sparseMultiplyScalar(ArrayInfo& matrix, double scalar);
-void sparseTrim(ArrayInfo& matrix);
-
+void executeUNTIL(const std::string &line);
+void executeWEND(const std::string &);
+void executeWHILE(const std::string &line);
+void setSparseValue(const std::string &name, const std::vector<int> &idx,
+                    const ArgsInfo &value);
+void sparseMultiplyScalar(ArrayInfo &matrix, double scalar);
+void sparseTrim(ArrayInfo &matrix);
 
 //
 //--------------------------------------------------------------------------------
@@ -111,13 +114,12 @@ ArgsInfo makeArgsInfo(long long line, std::string idname,
 }
 
 struct ArrayInfo {
-    std::vector<int> shape;
-    std::vector<double> data;                             // numeric dense
-    std::map<std::vector<int>, double> sparse;            // numeric sparse
-    std::vector<std::string> dataStr;                     // ← string dense
-    std::map<std::vector<int>, std::string> stringSparse; // ← string sparse
+  std::vector<int> shape;
+  std::vector<double> data;                             // numeric dense
+  std::map<std::vector<int>, double> sparse;            // numeric sparse
+  std::vector<std::string> dataStr;                     // ← string dense
+  std::map<std::vector<int>, std::string> stringSparse; // ← string sparse
 };
-
 
 std::map<std::string, ArrayInfo> arrays;
 
@@ -145,326 +147,346 @@ struct IdentifierReturn {
   double d;
 };
 
-long long currentline;  //current line we are working on.
-
+long long currentline; // current line we are working on.
 
 //
 //==================================================================================
 //    MAT Support functions
 //
 
-
-void sparseTrim(ArrayInfo& matrix) {
-    for (auto it = matrix.sparse.begin(); it != matrix.sparse.end(); ) {
-        if (std::abs(it->second) < 1e-12) it = matrix.sparse.erase(it);
-        else ++it;
-    }
+void sparseTrim(ArrayInfo &matrix) {
+  for (auto it = matrix.sparse.begin(); it != matrix.sparse.end();) {
+    if (std::abs(it->second) < 1e-12)
+      it = matrix.sparse.erase(it);
+    else
+      ++it;
+  }
 }
 
-double sparseSum(const ArrayInfo& matrix) {
-    double total = 0.0;
-    for (const auto& [_, val] : matrix.sparse) total += val;
-    return total;
+double sparseSum(const ArrayInfo &matrix) {
+  double total = 0.0;
+  for (const auto &[_, val] : matrix.sparse)
+    total += val;
+  return total;
 }
 
-void sparseMultiplyScalar(ArrayInfo& matrix, double scalar) {
-    for (auto& [_, val] : matrix.sparse) val *= scalar;
+void sparseMultiplyScalar(ArrayInfo &matrix, double scalar) {
+  for (auto &[_, val] : matrix.sparse)
+    val *= scalar;
 }
 
-ArrayInfo sparseMask(const ArrayInfo& source, const ArrayInfo& mask) {
-    ArrayInfo result = source;
-    result.sparse.clear();
-    for (const auto& [key, val] : source.sparse) {
-        if (mask.sparse.count(key) && std::abs(mask.sparse.at(key)) > 1e-12)
-            result.sparse[key] = val;
-    }
-    return result;
+ArrayInfo sparseMask(const ArrayInfo &source, const ArrayInfo &mask) {
+  ArrayInfo result = source;
+  result.sparse.clear();
+  for (const auto &[key, val] : source.sparse) {
+    if (mask.sparse.count(key) && std::abs(mask.sparse.at(key)) > 1e-12)
+      result.sparse[key] = val;
+  }
+  return result;
 }
 
 // Helper to parse index string like "A(1,2)" into name and index vector
-bool parseIndexedArray(const std::string& token, std::string& name, std::vector<int>& indices) {
-    size_t open = token.find('(');
-    size_t close = token.find(')');
-    if (open == std::string::npos || close == std::string::npos || close < open) return false;
-    name = token.substr(0, open);
-    std::string indexPart = token.substr(open + 1, close - open - 1);
-    std::istringstream iss(indexPart);
-    std::string val;
-    while (std::getline(iss, val, ',')) {
-        indices.push_back(std::stoi(val));
-    }
-    return true;
+bool parseIndexedArray(const std::string &token, std::string &name,
+                       std::vector<int> &indices) {
+  size_t open = token.find('(');
+  size_t close = token.find(')');
+  if (open == std::string::npos || close == std::string::npos || close < open)
+    return false;
+  name = token.substr(0, open);
+  std::string indexPart = token.substr(open + 1, close - open - 1);
+  std::istringstream iss(indexPart);
+  std::string val;
+  while (std::getline(iss, val, ',')) {
+    indices.push_back(std::stoi(val));
+  }
+  return true;
 }
 
 // Retrieve numeric or string from sparse matrix
-ArgsInfo getSparseValue(const std::string& name, const std::vector<int>& idx) {
-    ArgsInfo result;
-    if (arrays.count(name)) {
-        if (arrays[name].sparse.count(idx)) {
-            result.d = arrays[name].sparse.at(idx);
-            result.isstring = false;
-        } else if (arrays[name].stringSparse.count(idx)) {
-            result.s = arrays[name].stringSparse.at(idx);
-            result.isstring = true;
-        } else {
-            result.d = 0.0;
-            result.s = "";
-            result.isstring = false;
-        }
+ArgsInfo getSparseValue(const std::string &name, const std::vector<int> &idx) {
+  ArgsInfo result;
+  if (arrays.count(name)) {
+    if (arrays[name].sparse.count(idx)) {
+      result.d = arrays[name].sparse.at(idx);
+      result.isstring = false;
+    } else if (arrays[name].stringSparse.count(idx)) {
+      result.s = arrays[name].stringSparse.at(idx);
+      result.isstring = true;
+    } else {
+      result.d = 0.0;
+      result.s = "";
+      result.isstring = false;
     }
-    return result;
+  }
+  return result;
 }
 
 // Assign value to sparse matrix
-void setSparseValue(const std::string& name, const std::vector<int>& idx, const ArgsInfo& value) {
-    if (!arrays.count(name)) {
-        arrays[name].dimensions = idx.size();
-    }
-    if (value.isstring) {
-        arrays[name].stringSparse[idx] = value.s;
-    } else {
-        arrays[name].sparse[idx] = value.d;
-    }
+void setSparseValue(const std::string &name, const std::vector<int> &idx,
+                    const ArgsInfo &value) {
+  if (!arrays.count(name)) {
+    arrays[name].dimensions = idx.size();
+  }
+  if (value.isstring) {
+    arrays[name].stringSparse[idx] = value.s;
+  } else {
+    arrays[name].sparse[idx] = value.d;
+  }
 }
 
+bool invertMatrix(const std::vector<double> &input, std::vector<double> &output,
+                  int size) {
+  output = input;
+  std::vector<double> identity(size * size, 0.0);
+  for (int i = 0; i < size; ++i)
+    identity[i * size + i] = 1.0;
 
-bool invertMatrix(const std::vector<double>& input, std::vector<double>& output, int size) {
-    output = input;
-    std::vector<double> identity(size * size, 0.0);
-    for (int i = 0; i < size; ++i) identity[i * size + i] = 1.0;
+  for (int col = 0; col < size; ++col) {
+    double diag = output[col * size + col];
+    if (std::abs(diag) < 1e-12)
+      return false;
 
-    for (int col = 0; col < size; ++col) {
-        double diag = output[col * size + col];
-        if (std::abs(diag) < 1e-12) return false;
+    for (int j = 0; j < size; ++j) {
+      output[col * size + j] /= diag;
+      identity[col * size + j] /= diag;
+    }
 
+    for (int row = 0; row < size; ++row) {
+      if (row != col) {
+        double factor = output[row * size + col];
         for (int j = 0; j < size; ++j) {
-            output[col * size + j] /= diag;
-            identity[col * size + j] /= diag;
+          output[row * size + j] -= factor * output[col * size + j];
+          identity[row * size + j] -= factor * identity[col * size + j];
         }
-
-        for (int row = 0; row < size; ++row) {
-            if (row != col) {
-                double factor = output[row * size + col];
-                for (int j = 0; j < size; ++j) {
-                    output[row * size + j] -= factor * output[col * size + j];
-                    identity[row * size + j] -= factor * identity[col * size + j];
-                }
-            }
-        }
+      }
     }
+  }
 
-    output = identity;
-    return true;
+  output = identity;
+  return true;
 }
 
+double determinant(const std::vector<double> &mat, int n) {
+  if (n == 1)
+    return mat[0];
+  if (n == 2)
+    return mat[0] * mat[3] - mat[1] * mat[2];
 
-double determinant(const std::vector<double>& mat, int n) {
-    if (n == 1) return mat[0];
-    if (n == 2) return mat[0] * mat[3] - mat[1] * mat[2];
-
-    double det = 0.0;
-    std::vector<double> submat((n - 1) * (n - 1));
-    for (int col = 0; col < n; ++col) {
-        int subi = 0;
-        for (int i = 1; i < n; ++i) {
-            int subj = 0;
-            for (int j = 0; j < n; ++j) {
-                if (j == col) continue;
-                submat[subi * (n - 1) + subj] = mat[i * n + j];
-                subj++;
-            }
-            subi++;
-        }
-        double sign = (col % 2 == 0) ? 1.0 : -1.0;
-        det += sign * mat[col] * determinant(submat, n - 1);
+  double det = 0.0;
+  std::vector<double> submat((n - 1) * (n - 1));
+  for (int col = 0; col < n; ++col) {
+    int subi = 0;
+    for (int i = 1; i < n; ++i) {
+      int subj = 0;
+      for (int j = 0; j < n; ++j) {
+        if (j == col)
+          continue;
+        submat[subi * (n - 1) + subj] = mat[i * n + j];
+        subj++;
+      }
+      subi++;
     }
-    return det;
+    double sign = (col % 2 == 0) ? 1.0 : -1.0;
+    det += sign * mat[col] * determinant(submat, n - 1);
+  }
+  return det;
 }
 
+void evaluateMATExpression(const std::string &target,
+                           const std::string &expression) {
+  if (expr.find("DETERMINANT(") == 0) {
+    size_t open = expr.find("(");
+    size_t close = expr.find(")");
+    std::string source = expr.substr(open + 1, close - open - 1);
+    if (arrays.find(source) == arrays.end()) {
+      std::cerr << "ERROR: Matrix not found: " << source << std::endl;
+      return;
+    }
+    const ArrayInfo &mat = arrays[source];
+    if (mat.dimensions != 2 || mat.shape[0] != mat.shape[1]) {
+      std::cerr << "ERROR: DETERMINANT requires a square 2D matrix.";
+      return;
+    }
+    double resultVal = determinant(mat.data, mat.shape[0]);
+    ArrayInfo result;
+    result.dimensions = 2;
+    result.shape = {1, 1};
+    result.data = {resultVal};
+    arrays[target] = result;
+    return;
+  }
 
+  std::string expr = expression;
+  expr.erase(0, expr.find_first_not_of(" 	"));
 
-void evaluateMATExpression(const std::string& target, const std::string& expression) {
-    if (expr.find("DETERMINANT(") == 0) {
-        size_t open = expr.find("(");
-        size_t close = expr.find(")");
-        std::string source = expr.substr(open + 1, close - open - 1);
-        if (arrays.find(source) == arrays.end()) {
-            std::cerr << "ERROR: Matrix not found: " << source << std::endl;
-            return;
-        }
-        const ArrayInfo& mat = arrays[source];
-        if (mat.dimensions != 2 || mat.shape[0] != mat.shape[1]) {
-            std::cerr << "ERROR: DETERMINANT requires a square 2D matrix.";
-            return;
-        }
-        double resultVal = determinant(mat.data, mat.shape[0]);
-        ArrayInfo result;
-        result.dimensions = 2;
-        result.shape = {1, 1};
-        result.data = { resultVal };
-        arrays[target] = result;
-        return;
+  if (expr.find("INV(") == 0) {
+    size_t open = expr.find("(");
+    size_t close = expr.find(")");
+    std::string source = expr.substr(open + 1, close - open - 1);
+    if (arrays.find(source) == arrays.end()) {
+      std::cerr << "ERROR: INV source matrix not found: " << source
+                << std::endl;
+      return;
     }
 
-    std::string expr = expression;
-    expr.erase(0, expr.find_first_not_of(" 	"));
-
-    if (expr.find("INV(") == 0) {
-        size_t open = expr.find("(");
-        size_t close = expr.find(")");
-        std::string source = expr.substr(open + 1, close - open - 1);
-        if (arrays.find(source) == arrays.end()) {
-            std::cerr << "ERROR: INV source matrix not found: " << source << std::endl;
-            return;
-        }
-
-        const ArrayInfo& src = arrays[source];
-        if (src.dimensions != 2 || src.shape.size() != 2 || src.shape[0] != src.shape[1]) {
-            std::cerr << "ERROR: INV requires a square 2D matrix.";
-            return;
-        }
-
-        ArrayInfo result;
-        result.dimensions = 2;
-        result.shape = src.shape;
-
-        if (!invertMatrix(src.data, result.data, src.shape[0])) {
-            std::cerr << "ERROR: INV matrix is singular or not invertible.";
-            return;
-        }
-
-        arrays[target] = result;
-        return;
+    const ArrayInfo &src = arrays[source];
+    if (src.dimensions != 2 || src.shape.size() != 2 ||
+        src.shape[0] != src.shape[1]) {
+      std::cerr << "ERROR: INV requires a square 2D matrix.";
+      return;
     }
 
-    if (expr.find("TRANS(") == 0) {
-        size_t open = expr.find("(");
-        size_t close = expr.find(")");
-        std::string source = expr.substr(open + 1, close - open - 1);
-        if (arrays.find(source) == arrays.end()) {
-            std::cerr << "ERROR: TRANS source matrix not found: " << source << std::endl;
-            return;
-        }
-        const ArrayInfo& src = arrays[source];
-        if (src.dimensions != 2 || src.shape.size() != 2) {
-            std::cerr << "ERROR: TRANS requires a 2D matrix." << std::endl;
-            return;
-        }
+    ArrayInfo result;
+    result.dimensions = 2;
+    result.shape = src.shape;
 
-        ArrayInfo result;
-        result.dimensions = 2;
-        result.shape = { src.shape[1], src.shape[0] };
-        result.data.resize(src.data.size());
-
-        for (size_t r = 0; r < src.shape[0]; ++r) {
-            for (size_t c = 0; c < src.shape[1]; ++c) {
-                result.data[c * src.shape[0] + r] = src.data[r * src.shape[1] + c];
-            }
-        }
-
-        arrays[target] = result;
-        return;
+    if (!invertMatrix(src.data, result.data, src.shape[0])) {
+      std::cerr << "ERROR: INV matrix is singular or not invertible.";
+      return;
     }
 
-    std::istringstream iss(expr);
-    std::string token1, op, token2;
+    arrays[target] = result;
+    return;
+  }
 
-    std::istringstream iss_check(expr);
-    std::string left, op, right;
-    iss_check >> left >> op >> right;
-    if (op == "*" && arrays.find(left) == arrays.end() && arrays.find(right) != arrays.end()) {
-        // SCALAR * MATRIX
-        double scalar = std::stod(left);
-        const ArrayInfo& mat = arrays[right];
-        ArrayInfo result = mat;
-        if (mat.dimensions >= 4) {
-            for (auto& [key, val] : result.sparse) {
-                val *= scalar;
-            }
-        } else {
-            for (auto& val : result.data) {
-                val *= scalar;
-            }
-        }
-        arrays[target] = result;
-        return;
-    } else if (op == "*" && arrays.find(left) != arrays.end() && arrays.find(right) == arrays.end()) {
-        // MATRIX * SCALAR
-        double scalar = std::stod(right);
-        const ArrayInfo& mat = arrays[left];
-        ArrayInfo result = mat;
-        if (mat.dimensions >= 4) {
-            for (auto& [key, val] : result.sparse) {
-                val *= scalar;
-            }
-        } else {
-            for (auto& val : result.data) {
-                val *= scalar;
-            }
-        }
-        arrays[target] = result;
-        return;
+  if (expr.find("TRANS(") == 0) {
+    size_t open = expr.find("(");
+    size_t close = expr.find(")");
+    std::string source = expr.substr(open + 1, close - open - 1);
+    if (arrays.find(source) == arrays.end()) {
+      std::cerr << "ERROR: TRANS source matrix not found: " << source
+                << std::endl;
+      return;
+    }
+    const ArrayInfo &src = arrays[source];
+    if (src.dimensions != 2 || src.shape.size() != 2) {
+      std::cerr << "ERROR: TRANS requires a 2D matrix." << std::endl;
+      return;
     }
 
-    iss >> token1;
+    ArrayInfo result;
+    result.dimensions = 2;
+    result.shape = {src.shape[1], src.shape[0]};
+    result.data.resize(src.data.size());
 
-    if (iss >> op >> token2) {
-        if (arrays.find(token1) == arrays.end() || arrays.find(token2) == arrays.end()) {
-            std::cerr << "ERROR: One or both matrices not defined: " << token1 << ", " << token2 << std::endl;
-            return;
-        }
+    for (size_t r = 0; r < src.shape[0]; ++r) {
+      for (size_t c = 0; c < src.shape[1]; ++c) {
+        result.data[c * src.shape[0] + r] = src.data[r * src.shape[1] + c];
+      }
+    }
 
-        const ArrayInfo& a = arrays[token1];
-        const ArrayInfo& b = arrays[token2];
+    arrays[target] = result;
+    return;
+  }
 
-        if (a.dimensions != b.dimensions || a.shape != b.shape) {
-            std::cerr << "ERROR: Dimension mismatch in MAT operation." << std::endl;
-            return;
-        }
+  std::istringstream iss(expr);
+  std::string token1, op, token2;
 
-        ArrayInfo result;
-        result.dimensions = a.dimensions;
-        result.shape = a.shape;
-
-        if (a.dimensions >= 4) {
-            for (const auto& entry : a.sparse) {
-                if (b.sparse.find(entry.first) != b.sparse.end()) {
-                    if (op == "+") {
-                        result.sparse[entry.first] = entry.second + b.sparse.at(entry.first);
-                    } else if (op == "-") {
-                        result.sparse[entry.first] = entry.second - b.sparse.at(entry.first);
-                    } else if (op == "*") {
-                        result.sparse[entry.first] = entry.second * b.sparse.at(entry.first);
-                    } else {
-                        std::cerr << "ERROR: Unsupported operator " << op << " in sparse matrix." << std::endl;
-                        return;
-                    }
-                }
-            }
-        } else {
-            result.data.resize(a.data.size());
-            for (size_t i = 0; i < result.data.size(); ++i) {
-                if (op == "+") {
-                    result.data[i] = a.data[i] + b.data[i];
-                } else if (op == "-") {
-                    result.data[i] = a.data[i] - b.data[i];
-                } else if (op == "*") {
-                    result.data[i] = a.data[i] * b.data[i];
-                } else {
-                    std::cerr << "ERROR: Unsupported operator " << op << " in dense matrix." << std::endl;
-                    return;
-                }
-            }
-        }
-
-        arrays[target] = result;
+  std::istringstream iss_check(expr);
+  std::string left, op, right;
+  iss_check >> left >> op >> right;
+  if (op == "*" && arrays.find(left) == arrays.end() &&
+      arrays.find(right) != arrays.end()) {
+    // SCALAR * MATRIX
+    double scalar = std::stod(left);
+    const ArrayInfo &mat = arrays[right];
+    ArrayInfo result = mat;
+    if (mat.dimensions >= 4) {
+      for (auto &[key, val] : result.sparse) {
+        val *= scalar;
+      }
     } else {
-        if (arrays.find(token1) == arrays.end()) {
-            std::cerr << "ERROR: Matrix not defined: " << token1 << std::endl;
-            return;
-        }
-        arrays[target] = arrays[token1];
+      for (auto &val : result.data) {
+        val *= scalar;
+      }
     }
+    arrays[target] = result;
+    return;
+  } else if (op == "*" && arrays.find(left) != arrays.end() &&
+             arrays.find(right) == arrays.end()) {
+    // MATRIX * SCALAR
+    double scalar = std::stod(right);
+    const ArrayInfo &mat = arrays[left];
+    ArrayInfo result = mat;
+    if (mat.dimensions >= 4) {
+      for (auto &[key, val] : result.sparse) {
+        val *= scalar;
+      }
+    } else {
+      for (auto &val : result.data) {
+        val *= scalar;
+      }
+    }
+    arrays[target] = result;
+    return;
+  }
+
+  iss >> token1;
+
+  if (iss >> op >> token2) {
+    if (arrays.find(token1) == arrays.end() ||
+        arrays.find(token2) == arrays.end()) {
+      std::cerr << "ERROR: One or both matrices not defined: " << token1 << ", "
+                << token2 << std::endl;
+      return;
+    }
+
+    const ArrayInfo &a = arrays[token1];
+    const ArrayInfo &b = arrays[token2];
+
+    if (a.dimensions != b.dimensions || a.shape != b.shape) {
+      std::cerr << "ERROR: Dimension mismatch in MAT operation." << std::endl;
+      return;
+    }
+
+    ArrayInfo result;
+    result.dimensions = a.dimensions;
+    result.shape = a.shape;
+
+    if (a.dimensions >= 4) {
+      for (const auto &entry : a.sparse) {
+        if (b.sparse.find(entry.first) != b.sparse.end()) {
+          if (op == "+") {
+            result.sparse[entry.first] =
+                entry.second + b.sparse.at(entry.first);
+          } else if (op == "-") {
+            result.sparse[entry.first] =
+                entry.second - b.sparse.at(entry.first);
+          } else if (op == "*") {
+            result.sparse[entry.first] =
+                entry.second * b.sparse.at(entry.first);
+          } else {
+            std::cerr << "ERROR: Unsupported operator " << op
+                      << " in sparse matrix." << std::endl;
+            return;
+          }
+        }
+      }
+    } else {
+      result.data.resize(a.data.size());
+      for (size_t i = 0; i < result.data.size(); ++i) {
+        if (op == "+") {
+          result.data[i] = a.data[i] + b.data[i];
+        } else if (op == "-") {
+          result.data[i] = a.data[i] - b.data[i];
+        } else if (op == "*") {
+          result.data[i] = a.data[i] * b.data[i];
+        } else {
+          std::cerr << "ERROR: Unsupported operator " << op
+                    << " in dense matrix." << std::endl;
+          return;
+        }
+      }
+    }
+
+    arrays[target] = result;
+  } else {
+    if (arrays.find(token1) == arrays.end()) {
+      std::cerr << "ERROR: Matrix not defined: " << token1 << std::endl;
+      return;
+    }
+    arrays[target] = arrays[token1];
+  }
 }
 
 //
@@ -502,9 +524,9 @@ IdentifierReturn evaluateFunction(const std::string &name,
     }
 
   if (name == "SIN" || name == "COS" || name == "TAN" || name == "SQR" ||
-          name == "STRING$" || name == "LOG" || name == "LOG10" ||
-          name == "CLOG" || name == "EXP" || name == "INT" || name == "ROUND" ||
-          name == "FLOOR" || name == "CEIL" | name == "RND")
+      name == "STRING$" || name == "LOG" || name == "LOG10" || name == "CLOG" ||
+      name == "EXP" || name == "INT" || name == "ROUND" || name == "FLOOR" ||
+      name == "CEIL" | name == "RND")
     if (args[0].isstring) {
       std::cerr << "Error on " << name
                 << " passing a string where number expected [" << args[0].s
@@ -703,15 +725,14 @@ IdentifierReturn evaluateStringFunction(const std::string &name,
 
 class Parser {
 public:
-
-Parser(const std::string& expr, const long long linenumber)
-    : input(expr), linenumber(linenumber), pos(0) {}
+  Parser(const std::string &expr, const long long linenumber)
+      : input(expr), linenumber(linenumber), pos(0) {}
 
 private:
-    std::string input;
-    long long linenumber;
-    size_t pos;
-    std::string name;
+  std::string input;
+  long long linenumber;
+  size_t pos;
+  std::string name;
   IdentifierReturn evalueatefunctionreturn;
 
   double parse() {
@@ -788,8 +809,8 @@ private:
 
   IdentifierReturn parsePrimary() {
     IdentifierReturn valreturned;
-          std::vector<ArgsInfo> args;  
-          skipWhitespace();
+    std::vector<ArgsInfo> args;
+    skipWhitespace();
     if (peek() == '(') {
       get();
       valreturned.d = parseExpression();
@@ -804,12 +825,13 @@ private:
 
         if (peek() != ')') {
           do {
-            args.push_back(makeArgsInfo(linenumber , name, false, "",parseExpression()));
+            args.push_back(
+                makeArgsInfo(linenumber, name, false, "", parseExpression()));
           } while (peek() == ',' && get());
         }
         if (get() != ')') {
-          std::string errstr = "Expected ')' after function args: " +
-                               std::to_string(linenumber);
+          std::string errstr =
+              "Expected ')' after function args: " + std::to_string(linenumber);
           throw std::runtime_error(errstr);
         }
       }
@@ -823,23 +845,21 @@ private:
       evalueatefunctionreturn.s = variables.count(name) ? variables[name] : "";
       return evalueatefunctionreturn;
     }
-
-  } else {
+  }
+  else {
     evalueatefunctionreturn.isstring = false;
     evalueatefunctionreturn.d = parseNumber();
     return evalueatefunctionreturn;
   }
 
-
-double parseNumber() {
-  size_t start = pos;
-  while (pos < input.length() &&
-         (std::isdigit(input[pos]) || input[pos] == '.'))
-    ++pos;
-  return std::stod(input.substr(start, pos - start));
+  double parseNumber() {
+    size_t start = pos;
+    while (pos < input.length() &&
+           (std::isdigit(input[pos]) || input[pos] == '.'))
+      ++pos;
+    return std::stod(input.substr(start, pos - start));
   }
 };
-
 
 double evaluateExpression(const std::string &expr,
                           const long long currentline) {
@@ -848,61 +868,75 @@ double evaluateExpression(const std::string &expr,
 
 // ========================= Statement Handlers =========================
 
-void executeIF(const std::string& line) {
-    // Parse out the condition and the “then” clause
-    size_t thenPos = line.find("THEN");
-    if (thenPos == std::string::npos) {
-        std::cerr << "ERROR: Malformed IF—missing THEN\n";
-        return;
-    }
-    // Extract and trim condition
-    std::string cond = line.substr(2, thenPos - 2);
-    cond.erase(0, cond.find_first_not_of(" \t"));
-    cond.erase(cond.find_last_not_of(" \t") + 1);
-    // Extract the statement to run if true
-    std::string thenStmt = line.substr(thenPos + 4);
-    thenStmt.erase(0, thenStmt.find_first_not_of(" \t"));
+void executeIF(const std::string &line) {
+  // Parse out the condition and the “then” clause
+  size_t thenPos = line.find("THEN");
+  if (thenPos == std::string::npos) {
+    std::cerr << "ERROR: Malformed IF—missing THEN\n";
+    return;
+  }
+  // Extract and trim condition
+  std::string cond = line.substr(2, thenPos - 2);
+  cond.erase(0, cond.find_first_not_of(" \t"));
+  cond.erase(cond.find_last_not_of(" \t") + 1);
+  // Extract the statement to run if true
+  std::string thenStmt = line.substr(thenPos + 4);
+  thenStmt.erase(0, thenStmt.find_first_not_of(" \t"));
 
-    // Evaluate condition for numeric or string
-    bool isTrue = false;
-    if (!cond.empty() && cond.front() == '"' && cond.back() == '"') {
-        // literal string → true if not empty
-        std::string s = cond.substr(1, cond.size() - 2);
-        isTrue = !s.empty();
+  // Evaluate condition for numeric or string
+  bool isTrue = false;
+  if (!cond.empty() && cond.front() == '"' && cond.back() == '"') {
+    // literal string → true if not empty
+    std::string s = cond.substr(1, cond.size() - 2);
+    isTrue = !s.empty();
+  } else if (!cond.empty() && cond.back() == '$') {
+    // string variable → true if not empty
+    auto it = variables.find(cond);
+    if (it != variables.end() && it->second.vT == VT_STRING) {
+      isTrue = !it->second.s.empty();
     }
-    else if (!cond.empty() && cond.back() == '$') {
-        // string variable → true if not empty
-        auto it = variables.find(cond);
-        if (it != variables.end() && it->second.vT == VT_STRING) {
-            isTrue = !it->second.s.empty();
-        }
-    }
-    else {
-        // numeric expression → true if non-zero
-        double v = evaluateExpression(cond, currentline);
-        isTrue = (v != 0.0);
-    }
+  } else {
+    // numeric expression → true if non-zero
+    double v = evaluateExpression(cond, currentline);
+    isTrue = (v != 0.0);
+  }
 
-    // If true, dispatch the THEN‐clause just like a line by itself
-    if (isTrue) {
-        std::istringstream iss(thenStmt);
-        std::string kw;
-        iss >> kw;
-        for (auto& c : kw) c = std::toupper(c);
-        StatementType st = identifyStatement(kw);
-        switch (st) {
-          case ST_PRINT:      executePRINT(thenStmt);      break;
-          case ST_LET:        executeLET(thenStmt);        break;
-          case ST_INPUT:      executeINPUT(thenStmt);      break;
-          case ST_GOTO:       executeGOTO(thenStmt);       break;
-          case ST_GOSUB:      executeGOSUB(thenStmt);      break;
-          case ST_RETURN:     executeRETURN(thenStmt);     break;
-          case ST_DIM:        executeDIM(thenStmt);        break;
-          case ST_MAT:        executeMAT(thenStmt);        break;
-          // … include any other statement types you support …
-          default:
-            std::cerr << "ERROR: Unsupported statement in IF THEN: " << kw << "\n";
-        }
+  // If true, dispatch the THEN‐clause just like a line by itself
+  if (isTrue) {
+    std::istringstream iss(thenStmt);
+    std::string kw;
+    iss >> kw;
+    for (auto &c : kw)
+      c = std::toupper(c);
+    StatementType st = identifyStatement(kw);
+    switch (st) {
+    case ST_PRINT:
+      executePRINT(thenStmt);
+      break;
+    case ST_LET:
+      executeLET(thenStmt);
+      break;
+    case ST_INPUT:
+      executeINPUT(thenStmt);
+      break;
+    case ST_GOTO:
+      executeGOTO(thenStmt);
+      break;
+    case ST_GOSUB:
+      executeGOSUB(thenStmt);
+      break;
+    case ST_RETURN:
+      executeRETURN(thenStmt);
+      break;
+    case ST_DIM:
+      executeDIM(thenStmt);
+      break;
+    case ST_MAT:
+      executeMAT(thenStmt);
+      break;
+    // … include any other statement types you support …
+    default:
+      std::cerr << "ERROR: Unsupported statement in IF THEN: " << kw << "\n";
     }
+  }
 }
-

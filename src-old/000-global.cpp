@@ -14,12 +14,14 @@
 //             prototypes
 //
 
-void evaluateMATExpression(const std::string& target, const std::string& expression);
+void evaluateMATExpression(const std::string &target,
+                           const std::string &expression);
 void executeBEEP(const std::string &);
 void executeBEEP(const std::string &);
-void executeCLOSE(const std::string& line);
+void executeCLOSE(const std::string &line);
 void executeDEF(const std::string &);
-void executeDEF(const std::string &);}
+void executeDEF(const std::string &);
+}
 void executeDIM(const std::string &line);
 void executeFOR(const std::string &line);
 void executeFORMAT(const std::string &);
@@ -27,31 +29,32 @@ void executeGO(const std::string &line);
 void executeGOSUB(const std::string &line);
 void executeIF(const std::string &);
 void executeINPUT(const std::string &line);
-void executeINPUTFILE(const std::string& line);
-void executeLET(const std::string& line);
-void executeMAT(const std::string& line);
-void executeMATPRINT(const std::string& line);
-void executeMATPRINTFILE(const std::string& line);
-void executeMATREAD(const std::string& line);
+void executeINPUTFILE(const std::string &line);
+void executeLET(const std::string &line);
+void executeMAT(const std::string &line);
+void executeMATPRINT(const std::string &line);
+void executeMATPRINTFILE(const std::string &line);
+void executeMATREAD(const std::string &line);
 void executeON(const std::string &line);
-void executeOPEN(const std::string& line);
-void executePRINT(const std::string& line);
-void executePRINTFILE(const std::string& line);
-void executePRINTFILEUSING(const std::string& line);
+void executeOPEN(const std::string &line);
+void executePRINT(const std::string &line);
+void executePRINTFILE(const std::string &line);
+void executePRINTFILEUSING(const std::string &line);
 void executeREM(const std::string &);
-void executeREM(const std::string &);}
-void executeREPEAT(const std::string&);
+void executeREM(const std::string &);
+}
+void executeREPEAT(const std::string &);
 void executeRETURN(const std::string &);
-void executeSEED(const std::string& line);
+void executeSEED(const std::string &line);
 void executeSTOP(const std::string &);
 void executeSTOP(const std::string &);
-void executeUNTIL(const std::string& line);
-void executeWEND(const std::string&);
-void executeWHILE(const std::string& line);
-void setSparseValue(const std::string& name, const std::vector<int>& idx, const ArgsInfo& value);
-void sparseMultiplyScalar(ArrayInfo& matrix, double scalar);
-void sparseTrim(ArrayInfo& matrix);
-
+void executeUNTIL(const std::string &line);
+void executeWEND(const std::string &);
+void executeWHILE(const std::string &line);
+void setSparseValue(const std::string &name, const std::vector<int> &idx,
+                    const ArgsInfo &value);
+void sparseMultiplyScalar(ArrayInfo &matrix, double scalar);
+void sparseTrim(ArrayInfo &matrix);
 
 //
 //--------------------------------------------------------------------------------
@@ -111,13 +114,12 @@ ArgsInfo makeArgsInfo(long long line, std::string idname,
 }
 
 struct ArrayInfo {
-    std::vector<int> shape;
-    std::vector<double> data;                             // numeric dense
-    std::map<std::vector<int>, double> sparse;            // numeric sparse
-    std::vector<std::string> dataStr;                     // ← string dense
-    std::map<std::vector<int>, std::string> stringSparse; // ← string sparse
+  std::vector<int> shape;
+  std::vector<double> data;                             // numeric dense
+  std::map<std::vector<int>, double> sparse;            // numeric sparse
+  std::vector<std::string> dataStr;                     // ← string dense
+  std::map<std::vector<int>, std::string> stringSparse; // ← string sparse
 };
-
 
 std::map<std::string, ArrayInfo> arrays;
 
@@ -145,22 +147,22 @@ struct IdentifierReturn {
   double d;
 };
 
-long long currentline;  //current line we are working on.
+long long currentline; // current line we are working on.
 
 // name → (parameterName, expressionString)
 std::map<std::string, std::pair<std::string, std::string>> userFns;
 
 /
-//=======================================================================================
-//   inline functsupport
-//
-/
-//=======================================================================================
-//   inline functsupport
-//
+    //=======================================================================================
+    //   inline functsupport
+    //
+    /
+    //=======================================================================================
+    //   inline functsupport
+    //
 
-IdentifierReturn evaluateFunction(const std::string &name,
-                                  const std::vector<ArgsInfo> &args) {
+    IdentifierReturn evaluateFunction(const std::string &name,
+                                      const std::vector<ArgsInfo> &args) {
   IdentifierReturn temp;
 
   temp.isstring = false; //  all us of temp in this routine is returning a
@@ -189,9 +191,9 @@ IdentifierReturn evaluateFunction(const std::string &name,
     }
 
   if (name == "SIN" || name == "COS" || name == "TAN" || name == "SQR" ||
-          name == "STRING$" || name == "LOG" || name == "LOG10" ||
-          name == "CLOG" || name == "EXP" || name == "INT" || name == "ROUND" ||
-          name == "FLOOR" || name == "CEIL" | name == "RND")
+      name == "STRING$" || name == "LOG" || name == "LOG10" || name == "CLOG" ||
+      name == "EXP" || name == "INT" || name == "ROUND" || name == "FLOOR" ||
+      name == "CEIL" | name == "RND")
     if (args[0].isstring) {
       std::cerr << "Error on " << name
                 << " passing a string where number expected [" << args[0].s
@@ -236,78 +238,81 @@ IdentifierReturn evaluateFunction(const std::string &name,
   if (name == "SQR") {
     temp.d = std::sqrt(args[0].d);
     return temp;
-  // }
-  if (name == "LOG") {
-    temp.d = std::log(args[0].d);
-    return temp;
-  }
-  if (name == "LOG10" || name == "CLOG") {
-    temp.d = static_cast<double>(std::log10(args[0].d));
-    return temp;
-  }
-  if (name == "EXP") {
-    temp.d = std::exp(args[0].d);
-    return temp;
-  }
-  if (name == "INT") {
-    temp.d = std::floor(args[0].d);
-    return temp;
-  }
-  if (name == "ROUND") {
-    temp.d = std::round(args[0].d);
-    return temp;
-  }
-  if (name == "FLOOR") {
-    temp.d = std::floor(args[0].d);
-    return temp;
-  }
-  if (name == "CEIL") {
-    temp.d = std::ceil(args[0].d);
-    return temp;
-  }
-  if (name == "POW") {
-    temp.d = static_cast<double>(std::pow(args[0].d, args[1].d));
-    return temp;
-  }
-  if (name == "RND") {temp.d = static_cast<double>(rand()) / static_cast<double>(RAND_MAX);}
+    // }
+    if (name == "LOG") {
+      temp.d = std::log(args[0].d);
+      return temp;
+    }
+    if (name == "LOG10" || name == "CLOG") {
+      temp.d = static_cast<double>(std::log10(args[0].d));
+      return temp;
+    }
+    if (name == "EXP") {
+      temp.d = std::exp(args[0].d);
+      return temp;
+    }
+    if (name == "INT") {
+      temp.d = std::floor(args[0].d);
+      return temp;
+    }
+    if (name == "ROUND") {
+      temp.d = std::round(args[0].d);
+      return temp;
+    }
+    if (name == "FLOOR") {
+      temp.d = std::floor(args[0].d);
+      return temp;
+    }
+    if (name == "CEIL") {
+      temp.d = std::ceil(args[0].d);
+      return temp;
+    }
+    if (name == "POW") {
+      temp.d = static_cast<double>(std::pow(args[0].d, args[1].d));
+      return temp;
+    }
+    if (name == "RND") {
+      temp.d = static_cast<double>(rand()) / static_cast<double>(RAND_MAX);
+    }
 
-  if (name == "ASIN") {
-    temp.d = std::asin(args[0].d);
-    return temp;
-  }
-  if (name == "ACOS") {
-    temp.d = std::acos(args[0].d);
-    return temp;
-  }
-  if (name == "ATAN") {
-    temp.d = std::atan(args[0].d);
-    return temp;
-  }
-  if (name == "COT") {
-    temp.d = 1.0 / std::tan(args[0].d);
-    return temp;
-  }
-  if (name == "SEC") {
-    temp.d = 1.0 / std::cos(args[0].d);
-    return temp;
-  }
-  if (name == "CSC") {
-    temp.d = 1.0 / std::sin(args[0].d);
-    return temp;
-  }
-  if (name == "DEG2RAD") {
-    temp.d = args[0].d * M_PI / 180.0;
-    return temp;
-  }
-  if (name == "RAD2DEG") {
-    temp.d = args[0].d * 180.0 / M_PI;
-    return temp;
-  }
-  if (name == "DET") {
-    std::cerr << "DET() not implemented - placeholder only."<<__FILE__<<":"__LINE__ << std::endl;
-    temp.d = 0.0;
-    return temp;
-  }
+    if (name == "ASIN") {
+      temp.d = std::asin(args[0].d);
+      return temp;
+    }
+    if (name == "ACOS") {
+      temp.d = std::acos(args[0].d);
+      return temp;
+    }
+    if (name == "ATAN") {
+      temp.d = std::atan(args[0].d);
+      return temp;
+    }
+    if (name == "COT") {
+      temp.d = 1.0 / std::tan(args[0].d);
+      return temp;
+    }
+    if (name == "SEC") {
+      temp.d = 1.0 / std::cos(args[0].d);
+      return temp;
+    }
+    if (name == "CSC") {
+      temp.d = 1.0 / std::sin(args[0].d);
+      return temp;
+    }
+    if (name == "DEG2RAD") {
+      temp.d = args[0].d * M_PI / 180.0;
+      return temp;
+    }
+    if (name == "RAD2DEG") {
+      temp.d = args[0].d * 180.0 / M_PI;
+      return temp;
+    }
+    if (name == "DET") {
+      std::cerr << "DET() not implemented - placeholder only." << __FILE__
+                << ":"__LINE__ << std::endl;
+      temp.d = 0.0;
+      return temp;
+    }
     temp.d = rand() / RAND_MAX;
     return temp;
   }
@@ -424,47 +429,109 @@ IdentifierReturn evaluateStringFunction(const std::string &name,
   return temp;
 }
 
-
 //
 //----------------------------------------------------------------------------
 //  functional stubs
 
 void executeREM(const std::string &) {}
 
-void executeSTOP(const std::string &) { throw std::runtime_error("STOP called");
+void executeSTOP(const std::string &) {
+  throw std::runtime_error("STOP called");
 
-void evaluateMATExpression(const std::string& target, const std::string& expression);
-void executeBEEP(const std::string &) { std::cout << "Stub of BEEP" << std::endl; }
-void executeBEEP(const std::string &) { std::cout << "Stub of BEEP" << std::endl; }
-void executeCLOSE(const std::string& line) { std::cout << "Stub of CLOSE" << std::endl; }
-void executeDEF(const std::string &) { std::cout << "Stub of DEF" << std::endl; }
-void executeDEF(const std::string &);}
-void executeDIM(const std::string &line) { std::cout << "Stub of DIM" << std::endl; }
-void executeFOR(const std::string &line) { std::cout << "Stub of FOR" << std::endl; }
-void executeFORMAT(const std::string &) { std::cout << "Stub of FORMAT" << std::endl; }
-void executeGO(const std::string &line) { std::cout << "Stub of GO" << std::endl; }
-void executeGOSUB(const std::string &line) { std::cout << "Stub of GOSUB" << std::endl; }
+  void evaluateMATExpression(const std::string &target,
+                             const std::string &expression);
+  void executeBEEP(const std::string &) {
+    std::cout << "Stub of BEEP" << std::endl;
+  }
+  void executeBEEP(const std::string &) {
+    std::cout << "Stub of BEEP" << std::endl;
+  }
+  void executeCLOSE(const std::string &line) {
+    std::cout << "Stub of CLOSE" << std::endl;
+  }
+  void executeDEF(const std::string &) {
+    std::cout << "Stub of DEF" << std::endl;
+  }
+  void executeDEF(const std::string &);
+}
+void executeDIM(const std::string &line) {
+  std::cout << "Stub of DIM" << std::endl;
+}
+void executeFOR(const std::string &line) {
+  std::cout << "Stub of FOR" << std::endl;
+}
+void executeFORMAT(const std::string &) {
+  std::cout << "Stub of FORMAT" << std::endl;
+}
+void executeGO(const std::string &line) {
+  std::cout << "Stub of GO" << std::endl;
+}
+void executeGOSUB(const std::string &line) {
+  std::cout << "Stub of GOSUB" << std::endl;
+}
 void executeIF(const std::string &) { std::cout << "Stub of IF" << std::endl; }
-void executeINPUT(const std::string &line) { std::cout << "Stub of INPUT" << std::endl; }
-void executeINPUTFILE(const std::string& line) { std::cout << "Stub of INPUTFILE" << std::endl; }
-void executeLET(const std::string& line) { std::cout << "Stub of LET" << std::endl; }
-void executeMAT(const std::string& line) { std::cout << "Stub of MAT" << std::endl; }
-void executeMATPRINT(const std::string& line) { std::cout << "Stub of MATPRINT" << std::endl; }
-void executeMATPRINTFILE(const std::string& line) { std::cout << "Stub of MATPRINTFILE" << std::endl; }
-void executeMATREAD(const std::string& line) { std::cout << "Stub of MATREAD" << std::endl; }
-void executeON(const std::string &line) { std::cout << "Stub of ON" << std::endl; }
-void executeOPEN(const std::string& line) { std::cout << "Stub of OPEN" << std::endl; }
-void executePRINT(const std::string& line) { std::cout << "Stub of PRINT" << std::endl; }
-void executePRINTFILE(const std::string& line) { std::cout << "Stub of PRINTFILE" << std::endl; }
-void executePRINTFILEUSING(const std::string& line) { std::cout << "Stub of PRINTFILEUSING" << std::endl; }
-void executeREM(const std::string &) { std::cout << "Stub of REM" << std::endl; }
-void executeREM(const std::string &);}
-void executeREPEAT(const std::string&) { std::cout << "Stub of REPEAT" << std::endl; }
-void executeRETURN(const std::string &) { std::cout << "Stub of RETURN" << std::endl; }
-void executeSEED(const std::string& line) { std::cout << "Stub of SEED" << std::endl; }
-void executeSTOP(const std::string &) { std::cout << "Stub of STOP" << std::endl; }
-void executeSTOP(const std::string &) { std::cout << "Stub of STOP" << std::endl; }
-void executeUNTIL(const std::string& line) { std::cout << "Stub of UNTIL" << std::endl; }
-void executeWEND(const std::string&) { std::cout << "Stub of WEND" << std::endl; }
-void executeWHILE(const std::string& line) { std::cout << "Stub of WHILE" << std::endl; }
-
+void executeINPUT(const std::string &line) {
+  std::cout << "Stub of INPUT" << std::endl;
+}
+void executeINPUTFILE(const std::string &line) {
+  std::cout << "Stub of INPUTFILE" << std::endl;
+}
+void executeLET(const std::string &line) {
+  std::cout << "Stub of LET" << std::endl;
+}
+void executeMAT(const std::string &line) {
+  std::cout << "Stub of MAT" << std::endl;
+}
+void executeMATPRINT(const std::string &line) {
+  std::cout << "Stub of MATPRINT" << std::endl;
+}
+void executeMATPRINTFILE(const std::string &line) {
+  std::cout << "Stub of MATPRINTFILE" << std::endl;
+}
+void executeMATREAD(const std::string &line) {
+  std::cout << "Stub of MATREAD" << std::endl;
+}
+void executeON(const std::string &line) {
+  std::cout << "Stub of ON" << std::endl;
+}
+void executeOPEN(const std::string &line) {
+  std::cout << "Stub of OPEN" << std::endl;
+}
+void executePRINT(const std::string &line) {
+  std::cout << "Stub of PRINT" << std::endl;
+}
+void executePRINTFILE(const std::string &line) {
+  std::cout << "Stub of PRINTFILE" << std::endl;
+}
+void executePRINTFILEUSING(const std::string &line) {
+  std::cout << "Stub of PRINTFILEUSING" << std::endl;
+}
+void executeREM(const std::string &) {
+  std::cout << "Stub of REM" << std::endl;
+}
+void executeREM(const std::string &);
+}
+void executeREPEAT(const std::string &) {
+  std::cout << "Stub of REPEAT" << std::endl;
+}
+void executeRETURN(const std::string &) {
+  std::cout << "Stub of RETURN" << std::endl;
+}
+void executeSEED(const std::string &line) {
+  std::cout << "Stub of SEED" << std::endl;
+}
+void executeSTOP(const std::string &) {
+  std::cout << "Stub of STOP" << std::endl;
+}
+void executeSTOP(const std::string &) {
+  std::cout << "Stub of STOP" << std::endl;
+}
+void executeUNTIL(const std::string &line) {
+  std::cout << "Stub of UNTIL" << std::endl;
+}
+void executeWEND(const std::string &) {
+  std::cout << "Stub of WEND" << std::endl;
+}
+void executeWHILE(const std::string &line) {
+  std::cout << "Stub of WHILE" << std::endl;
+}

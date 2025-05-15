@@ -4,6 +4,6 @@
 #include <map>
 #include <string>
 
-void checkSyntax(const std::map<int, std::string>& programSource);
+void checkSyntax(const std::map<int, std::string> &programSource);
 
 #endif // SYNTAX_H

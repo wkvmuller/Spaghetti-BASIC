@@ -380,14 +380,17 @@ void executeREAD(const std::string &line) {
 
     VarInfo val = program.dataValues[program.dataPointer++];
     if (wantsString) {
-            VarInfo &var = program.stringVariables[name];
-            var.stringValue = val.isString ? val.stringValue : std::to_string(val.numericValue);
-            var.isString = true;
-        } else {
-            VarInfo &var = program.numericVariables[name];
-            var.numericValue = !val.isString ? val.numericValue : std::stod(val.stringValue);
-            var.isString = false;
-        } else {
+      VarInfo &var = program.stringVariables[name];
+      var.stringValue =
+          val.isString ? val.stringValue : std::to_string(val.numericValue);
+      var.isString = true;
+    } else {
+      VarInfo &var = program.numericVariables[name];
+      var.numericValue =
+          !val.isString ? val.numericValue : std::stod(val.stringValue);
+      var.isString = false;
+    }
+    else {
       program.numericVariables[name] =
           !val.isString ? val.numericValue : std::stod(val.stringValue);
     }
@@ -746,14 +749,15 @@ void runInterpreter(PROGRAM_STRUCTURE &program) {
     auto linenum = entry.first;
     auto code2 = entry.second;
     std::string code = code2;
-    
+
     {
       std::cout << "Executing line " << linenum << ": " << code << std::endl;
       // TODO: Add interpreter logic here
       std::string keyword = code.substr(code.find(" "));
-      std::cout<<"keyword("<<keyword<<")"<<std::endl
-      
-      StatementType stmt = identifyStatement(keyword);
+      std::cout << "keyword(" << keyword << ")"
+                << std::endl
+
+                       StatementType stmt = identifyStatement(keyword);
       switch (stmt) {
       case ST_PRINTFILEUSING:
         executePRINTFILEUSING(code);
@@ -856,4 +860,3 @@ void runInterpreter(PROGRAM_STRUCTURE &program) {
     }
   }
 }
-

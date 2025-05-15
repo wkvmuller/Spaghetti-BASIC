@@ -326,7 +326,6 @@ IdentifierReturn evaluateStringFunction(const std::string &name,
 // ========================= Expression Evaluator =========================
 //
 
-
 //
 //=========================================================================
 //  Statments support.
@@ -376,36 +375,32 @@ void executeREAD(const std::string &line) {
     throw std::runtime_error("SYNTAX ERROR: Invalid READ: " + line);
 
   std::stringstream ss(m[1].str());
-   std::string tok;
-   while (std::getline(ss, tok, ',')) {
-     tok = std::regex_replace(tok, std::regex(R"(^\s+|\s+$)"), "");
-     bool wantsString = (tok.back() == '$');
-     std::string name = wantsString
-                           ? tok.substr(0, tok.size() - 1)
-                           : tok;
- 
-     if (program.dataPointer >= program.dataValues.size())
-       throw std::runtime_error("RUNTIME ERROR: No more DATA");
- 
-     VarInfo val = program.dataValues[program.dataPointer++];
-     if (wantsString) {
-       // Allocate or fetch the VarInfo slot for this string var
-       VarInfo &var = program.stringVariables[name];
-       // Store the DATA value as a string
-       var.stringValue = val.isString
-                           ? val.stringValue
-                           : std::to_string(val.numericValue);
-       var.isString = true;
-     } else {
-       // Allocate or fetch the VarInfo slot for this numeric var
-       VarInfo &var = program.numericVariables[name];
-       // Store the DATA value as a number
-       var.numericValue = !val.isString
-                           ? val.numericValue
-                           : std::stod(val.stringValue);
-       var.isString = false;
-     }
-   }
+  std::string tok;
+  while (std::getline(ss, tok, ',')) {
+    tok = std::regex_replace(tok, std::regex(R"(^\s+|\s+$)"), "");
+    bool wantsString = (tok.back() == '$');
+    std::string name = wantsString ? tok.substr(0, tok.size() - 1) : tok;
+
+    if (program.dataPointer >= program.dataValues.size())
+      throw std::runtime_error("RUNTIME ERROR: No more DATA");
+
+    VarInfo val = program.dataValues[program.dataPointer++];
+    if (wantsString) {
+      // Allocate or fetch the VarInfo slot for this string var
+      VarInfo &var = program.stringVariables[name];
+      // Store the DATA value as a string
+      var.stringValue =
+          val.isString ? val.stringValue : std::to_string(val.numericValue);
+      var.isString = true;
+    } else {
+      // Allocate or fetch the VarInfo slot for this numeric var
+      VarInfo &var = program.numericVariables[name];
+      // Store the DATA value as a number
+      var.numericValue =
+          !val.isString ? val.numericValue : std::stod(val.stringValue);
+      var.isString = false;
+    }
+  }
 }
 
 // —————————————————————————————————————————————————————————
@@ -415,10 +410,10 @@ void executeRESTORE(const std::string & /*line*/) { program.dataPointer = 0; }
 
 void evaluateMATExpression(const std::string &target,
                            const std::string &expression);
-                           
+
 // BEEP statement — emit a bell character
 void executeBEEP(const std::string & /*line*/) {
-    std::cout << '\a' << std::flush;
+  std::cout << '\a' << std::flush;
 }
 void executeCLOSE(const std::string &line) {
   std::cout << "Stub of CLOSE" << std::endl;
@@ -427,7 +422,7 @@ void executeDEF(const std::string &) {
   std::cout << "Stub of DEF" << std::endl;
 }
 void executeEND(const std::string &line) {
-    throw std::runtime_error("RUNTIME ERROR: END of program");
+  throw std::runtime_error("RUNTIME ERROR: END of program");
 }
 
 // Assumes you have a helper to eval an arithmetic expression to an int:
@@ -609,27 +604,27 @@ void executeMATREAD(const std::string &line) {
   std::cout << "Stub of MATREAD" << std::endl;
 }
 
-
 void executePRINTexpr(const std::string &line) {
-    // Skip past the “PRINT” keyword
-    std::istringstream iss(line);
-    std::string kw;
-    iss >> kw;  // eats "PRINT"
+  // Skip past the “PRINT” keyword
+  std::istringstream iss(line);
+  std::string kw;
+  iss >> kw; // eats "PRINT"
 
-    // Peek at the next non-whitespace character
-    char c = iss.peek();
-    if (c == '#') {
-        // It’s the file-output form.  Pass the full line through.
-        // executePRINTFILEUSING could be chosen here if you detect “USING” later.
-        executePRINTFILE(line);
-    } else { iss >> kw;
-      if (kw == "USING") {
-        executePRINTFILEUSING(line);
+  // Peek at the next non-whitespace character
+  char c = iss.peek();
+  if (c == '#') {
+    // It’s the file-output form.  Pass the full line through.
+    // executePRINTFILEUSING could be chosen here if you detect “USING” later.
+    executePRINTFILE(line);
+  } else {
+    iss >> kw;
+    if (kw == "USING") {
+      executePRINTFILEUSING(line);
     } else {
-        // Normal console PRINT
-        executePRINT(line);
+      // Normal console PRINT
+      executePRINT(line);
     }
-    }
+  }
 }
 
 // Forward decls (you should have these elsewhere or adapt)
@@ -638,46 +633,47 @@ static std::string trim(const std::string &s);
 
 // PRINT handler
 void executePRINT(const std::string &line) {
-    // Match everything after PRINT
-    static const std::regex rgx(R"(^\s*PRINT\s+(.*)$)", std::regex::icase);
-    std::smatch m;
-    if (!std::regex_match(line, m, rgx)) {
-        throw std::runtime_error("SYNTAX ERROR: Invalid PRINT: " + line);
+  // Match everything after PRINT
+  static const std::regex rgx(R"(^\s*PRINT\s+(.*)$)", std::regex::icase);
+  std::smatch m;
+  if (!std::regex_match(line, m, rgx)) {
+    throw std::runtime_error("SYNTAX ERROR: Invalid PRINT: " + line);
+  }
+
+  std::string list = m[1].str();
+  std::stringstream ss(list);
+  std::string item;
+  bool first = true;
+
+  while (std::getline(ss, item, ',')) {
+    item = trim(item);
+    if (!first) {
+      std::cout << ' ';
     }
+    first = false;
 
-    std::string list = m[1].str();
-    std::stringstream ss(list);
-    std::string item;
-    bool first = true;
-
-    while (std::getline(ss, item, ',')) {
-        item = trim(item);
-        if (!first) {
-            std::cout << ' ';
-        }
-        first = false;
-
-        // String literal?
-        if (item.size() >= 2 && item.front() == '"' && item.back() == '"') {
-            std::cout << item.substr(1, item.size() - 2);
-        } else {
-            // Numeric expression
-            double val = evalExpression(item);
-            // You can control formatting here (fixed, precision, etc.)
-            std::cout << val;
-        }
+    // String literal?
+    if (item.size() >= 2 && item.front() == '"' && item.back() == '"') {
+      std::cout << item.substr(1, item.size() - 2);
+    } else {
+      // Numeric expression
+      double val = evalExpression(item);
+      // You can control formatting here (fixed, precision, etc.)
+      std::cout << val;
     }
+  }
 
-    std::cout << std::endl;
+  std::cout << std::endl;
 }
 
 // Example trim helper
 static std::string trim(const std::string &s) {
-    const char *WS = " \t\r\n";
-    size_t start = s.find_first_not_of(WS);
-    if (start == std::string::npos) return "";
-    size_t end = s.find_last_not_of(WS);
-    return s.substr(start, end - start + 1);
+  const char *WS = " \t\r\n";
+  size_t start = s.find_first_not_of(WS);
+  if (start == std::string::npos)
+    return "";
+  size_t end = s.find_last_not_of(WS);
+  return s.substr(start, end - start + 1);
 }
 
 void executePRINTFILE(const std::string &line) {
@@ -688,117 +684,118 @@ void executePRINTFILEUSING(const std::string &line) {
 }
 
 // Helper to find a line in programSource or throw
-static std::map<int,std::string>::const_iterator findLine(int ln) {
-    auto it = program.programSource.find(ln);
-    if (it == program.programSource.end())
-        throw std::runtime_error("RUNTIME ERROR: Undefined line " + std::to_string(ln));
-    return it;
+static std::map<int, std::string>::const_iterator findLine(int ln) {
+  auto it = program.programSource.find(ln);
+  if (it == program.programSource.end())
+    throw std::runtime_error("RUNTIME ERROR: Undefined line " +
+                             std::to_string(ln));
+  return it;
 }
 
 // —————————————————————————————————————————————
 // GOTO <n>
 // —————————————————————————————————————————————
 void executeGOTO(const std::string &line) {
-    static const std::regex rgx(R"(^\s*GOTO\s+(\d+)\s*$)", std::regex::icase);
-    std::smatch m;
-    if (!std::regex_match(line, m, rgx))
-        throw std::runtime_error("SYNTAX ERROR: Invalid GOTO: " + line);
-    int target = std::atoi(m[1].str().c_str());
-    // Verify target exists
-    findLine(target);
-    // Schedule the jump
-    program.nextLineNumber    = target;
-    program.nextLineNumberSet = true;
+  static const std::regex rgx(R"(^\s*GOTO\s+(\d+)\s*$)", std::regex::icase);
+  std::smatch m;
+  if (!std::regex_match(line, m, rgx))
+    throw std::runtime_error("SYNTAX ERROR: Invalid GOTO: " + line);
+  int target = std::atoi(m[1].str().c_str());
+  // Verify target exists
+  findLine(target);
+  // Schedule the jump
+  program.nextLineNumber = target;
+  program.nextLineNumberSet = true;
 }
 
 // —————————————————————————————————————————————
 // GOSUB <n>
 // —————————————————————————————————————————————
 void executeGOSUB(const std::string &line) {
-    static const std::regex rgx(R"(^\s*GOSUB\s+(\d+)\s*$)", std::regex::icase);
-    std::smatch m;
-    if (!std::regex_match(line, m, rgx))
-        throw std::runtime_error("SYNTAX ERROR: Invalid GOSUB: " + line);
-    if (program.gosubStack.size() >= 15)
-        throw std::runtime_error("RUNTIME ERROR: GOSUB nesting exceeds 15 levels");
+  static const std::regex rgx(R"(^\s*GOSUB\s+(\d+)\s*$)", std::regex::icase);
+  std::smatch m;
+  if (!std::regex_match(line, m, rgx))
+    throw std::runtime_error("SYNTAX ERROR: Invalid GOSUB: " + line);
+  if (program.gosubStack.size() >= 15)
+    throw std::runtime_error("RUNTIME ERROR: GOSUB nesting exceeds 15 levels");
 
-    int target = std::atoi(m[1].str().c_str());
-    // Verify target exists
-    findLine(target);
+  int target = std::atoi(m[1].str().c_str());
+  // Verify target exists
+  findLine(target);
 
-    // Push return address (the *next* line) onto stack
+  // Push return address (the *next* line) onto stack
   //  extern int currentLine;
-    program.gosubStack.push_back(program.currentLine);
+  program.gosubStack.push_back(program.currentLine);
 
-    // Schedule jump
-    program.nextLineNumber    = target;
-    program.nextLineNumberSet = true;
+  // Schedule jump
+  program.nextLineNumber = target;
+  program.nextLineNumberSet = true;
 }
 
 // —————————————————————————————————————————————
 // RETURN
 // —————————————————————————————————————————————
 void executeRETURN(const std::string & /*line*/) {
-    if (program.gosubStack.empty())
-        throw std::runtime_error("RUNTIME ERROR: RETURN without GOSUB");
-    int retLine = program.gosubStack.back();
-    program.gosubStack.pop_back();
-    // Verify return line still exists
-    findLine(retLine);
+  if (program.gosubStack.empty())
+    throw std::runtime_error("RUNTIME ERROR: RETURN without GOSUB");
+  int retLine = program.gosubStack.back();
+  program.gosubStack.pop_back();
+  // Verify return line still exists
+  findLine(retLine);
 
-    program.nextLineNumber    = retLine;
-    program.nextLineNumberSet = true;
+  program.nextLineNumber = retLine;
+  program.nextLineNumberSet = true;
 }
 
 // —————————————————————————————————————————————
 // ON <expr> GOTO|GOSUB <list>
 // —————————————————————————————————————————————
 void executeON(const std::string &line) {
-    static const std::regex rgx(
+  static const std::regex rgx(
       R"(^\s*ON\s+(.+?)\s+(GOTO|GOSUB)\s+(\d+(?:\s*,\s*\d+)*)\s*$)",
-      std::regex::icase
-    );
-    std::smatch m;
-    if (!std::regex_match(line, m, rgx))
-        throw std::runtime_error("SYNTAX ERROR: Invalid ON: " + line);
+      std::regex::icase);
+  std::smatch m;
+  if (!std::regex_match(line, m, rgx))
+    throw std::runtime_error("SYNTAX ERROR: Invalid ON: " + line);
 
-    // Evaluate the selector expression (1-based index)
-    double d = evalExpression(m[1].str());
-    int idx = static_cast<int>(d);
-    if (idx < 1) 
-        throw std::runtime_error("RUNTIME ERROR: ON index must be >=1");
+  // Evaluate the selector expression (1-based index)
+  double d = evalExpression(m[1].str());
+  int idx = static_cast<int>(d);
+  if (idx < 1)
+    throw std::runtime_error("RUNTIME ERROR: ON index must be >=1");
 
-    // Build target list
-    std::vector<int> targets;
-    std::stringstream ss(m[3].str());
-    std::string tok;
-    while (std::getline(ss, tok, ',')) {
-        int t = std::atoi(tok.c_str());
-        // Verify each target exists
-        findLine(t);
-        targets.push_back(t);
-    }
-    if (idx > (int)targets.size())
-        throw std::runtime_error("RUNTIME ERROR: ON index out of range");
+  // Build target list
+  std::vector<int> targets;
+  std::stringstream ss(m[3].str());
+  std::string tok;
+  while (std::getline(ss, tok, ',')) {
+    int t = std::atoi(tok.c_str());
+    // Verify each target exists
+    findLine(t);
+    targets.push_back(t);
+  }
+  if (idx > (int)targets.size())
+    throw std::runtime_error("RUNTIME ERROR: ON index out of range");
 
-    const std::string verb = m[2].str();
-    int chosen = targets[idx-1];
+  const std::string verb = m[2].str();
+  int chosen = targets[idx - 1];
 
-    if (verb == "GOTO" || verb == "goto" || verb == "Goto") {
-        program.nextLineNumber    = chosen;
-        program.nextLineNumberSet = true;
-    } else {
-        // GOSUB branch
-        if (program.gosubStack.size() >= 15)
-            throw std::runtime_error("RUNTIME ERROR: GOSUB nesting exceeds 15 levels");
-        extern int currentLine;
-        program.gosubStack.push_back(currentLine);
-        program.nextLineNumber    = chosen;
-        program.nextLineNumberSet = true;
-    }
+  if (verb == "GOTO" || verb == "goto" || verb == "Goto") {
+    program.nextLineNumber = chosen;
+    program.nextLineNumberSet = true;
+  } else {
+    // GOSUB branch
+    if (program.gosubStack.size() >= 15)
+      throw std::runtime_error(
+          "RUNTIME ERROR: GOSUB nesting exceeds 15 levels");
+    extern int currentLine;
+    program.gosubStack.push_back(currentLine);
+    program.nextLineNumber = chosen;
+    program.nextLineNumberSet = true;
+  }
 }
 
-void executeREM(const std::string &) { }
+void executeREM(const std::string &) {}
 
 void executeREPEAT(const std::string &) {
   std::cout << "Stub of REPEAT" << std::endl;
@@ -809,7 +806,7 @@ void executeSEED(const std::string &line) {
 }
 
 void executeSTOP(const std::string &line) {
-    throw std::runtime_error("RUNTIME ERROR: STOP encountered");
+  throw std::runtime_error("RUNTIME ERROR: STOP encountered");
 }
 void executeUNTIL(const std::string &line) {
   std::cout << "Stub of UNTIL" << std::endl;
@@ -817,9 +814,13 @@ void executeUNTIL(const std::string &line) {
 void executeWEND(const std::string &) {
   std::cout << "Stub of WEND" << std::endl;
 }
-void executeWHILE(const std::string &line) {  std::cout << "Stub of WHILE" << std::endl;}
+void executeWHILE(const std::string &line) {
+  std::cout << "Stub of WHILE" << std::endl;
+}
 
-void executeNEXT(const std::string &line) {  std::cout << "Stub of NEXT" << std::endl;}
+void executeNEXT(const std::string &line) {
+  std::cout << "Stub of NEXT" << std::endl;
+}
 // ========================= Dispatcher =========================
 
 enum StatementType {
@@ -1009,11 +1010,11 @@ void runInterpreter(PROGRAM_STRUCTURE &program) {
       case ST_CLOSE:
         executeCLOSE(code);
         break;
-/*
-        case ST_PRINTFILE:
-        executePRINTexpr(code);
-        break;
-*/
+        /*
+                case ST_PRINTFILE:
+                executePRINTexpr(code);
+                break;
+        */
       case ST_INPUTFILE:
         executeINPUTFILE(code);
         break;

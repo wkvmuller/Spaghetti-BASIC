@@ -29,8 +29,9 @@ void checkSyntax(const std::map<int, std::string> &programSource) {
     definedLines.insert(lineNumber);
 
     std::string upper = line;
-for (size_t i = 0; i < upper.length(); ++i) upper[i] = toupper(upper[i]);
-std::regex dim_rgx(R"(DIM\s+\w+\s*\(([^\)]*)\))");
+    for (size_t i = 0; i < upper.length(); ++i)
+      upper[i] = toupper(upper[i]);
+    std::regex dim_rgx(R"(DIM\s+\w+\s*\(([^\)]*)\))");
     std::smatch dim_match;
     if (std::regex_search(upper, dim_match, dim_rgx)) {
       std::string dims = dim_match[1];
@@ -44,7 +45,10 @@ std::regex dim_rgx(R"(DIM\s+\w+\s*\(([^\)]*)\))");
                   << lineNumber << ": " << line << std::endl;
         ok = false;
       }
-    }std::regex ref_rgx(R"(\b(?:GOTO|THEN|GOSUB|PRINT\s+USING|PRINT\s+#\d+\s+USING)\s+(\d+))", std::regex::icase);
+    }
+    std::regex ref_rgx(
+        R"(\b(?:GOTO|THEN|GOSUB|PRINT\s+USING|PRINT\s+#\d+\s+USING)\s+(\d+))",
+        std::regex::icase);
     std::smatch ref_match;
     std::string check = upper;
     while (std::regex_search(check, ref_match, ref_rgx)) {
@@ -156,7 +160,8 @@ std::regex dim_rgx(R"(DIM\s+\w+\s*\(([^\)]*)\))");
   }
 
   if (!controlStack.empty()) {
-    for (std::vector<std::string>::const_iterator it = controlStack.begin(); it != controlStack.end(); ++it) {
+    for (std::vector<std::string>::const_iterator it = controlStack.begin();
+         it != controlStack.end(); ++it) {
       std::cout << "SYNTAX ERROR: Missing closing for " << *it << " block."
                 << std::endl;
     }

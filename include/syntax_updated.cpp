@@ -25,7 +25,8 @@ void checkSyntax(const std::map<int, std::string> &program.programSource) {
   std::vector<std::string> controlStack;
   bool ok = true;
 
-  for (std::map<int, std::string>::const_iterator it = program.programSource.begin();
+  for (std::map<int, std::string>::const_iterator it =
+           program.programSource.begin();
        it != program.programSource.end(); ++it) {
     int lineNumber = it->first;
     std::string line = it->second;

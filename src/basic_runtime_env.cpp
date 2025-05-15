@@ -1,15 +1,15 @@
 #include "fileio.h"
-#include <filesystem>
 #include "interpreter.h"
+#include "renumber.h"
 #include "syntax.h"
 #include <algorithm>
 #include <climits>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <map>
 #include <sstream>
 #include <string>
-#include "renumber.h"
 
 #include "program_structure.h"
 
@@ -17,7 +17,7 @@ extern void handleRENUMBER(int newStart, int delta, int oldStart);
 extern void executeOPEN(const std::string &line);
 
 extern PROGRAM_STRUCTURE program;
-//PROGRAM_STRUCTURE program;
+// PROGRAM_STRUCTURE program;
 void list(int start = 0, int end = INT_MAX);
 
 void interactiveLoop() {
@@ -38,21 +38,20 @@ void interactiveLoop() {
       std::string filename;
       iss >> filename;
       program.filename = filename;
-    load(program);
-    } 
-    else if (command == "RENUMBER") {
-        int newStart = 10, delta = 10, oldStart = 0;
-        char comma;
-        if (iss >> newStart) {
+      load(program);
+    } else if (command == "RENUMBER") {
+      int newStart = 10, delta = 10, oldStart = 0;
+      char comma;
+      if (iss >> newStart) {
+        if (iss >> comma && comma == ',') {
+          if (iss >> delta) {
             if (iss >> comma && comma == ',') {
-                if (iss >> delta) {
-                    if (iss >> comma && comma == ',') {
-                        iss >> oldStart;
-                    }
-                }
+              iss >> oldStart;
             }
+          }
         }
-        handleRENUMBER(newStart, delta, oldStart);
+      }
+      handleRENUMBER(newStart, delta, oldStart);
     }
 
     else if (command == "SAVE") {
@@ -63,10 +62,11 @@ void interactiveLoop() {
         std::cerr << "ERROR: Cannot open file for writing: " << filename
                   << std::endl;
       } else {
-        for (std::map<int, std::string>::const_iterator it = program.programSource.begin();
-     it != program.programSource.end(); ++it) {
-    int linenum = it->first;
-    const std::string &content = it->second;
+        for (std::map<int, std::string>::const_iterator it =
+                 program.programSource.begin();
+             it != program.programSource.end(); ++it) {
+          int linenum = it->first;
+          const std::string &content = it->second;
           outfile << linenum << " " << content << std::endl;
         }
         std::cout << "Saved " << program.programSource.size() << " lines to "
@@ -91,39 +91,38 @@ void interactiveLoop() {
       if (iss >> filename) {
         program.programSource.clear();
         program.filename = filename;
-    load(program);
+        load(program);
       }
       try {
         runInterpreter(program);
       } catch (const std::runtime_error &e) {
         std::cerr << "Runtime error: " << e.what() << std::endl;
       }
-      } else if (command == "SYNTAX") {
-        checkSyntax(program.programSource);
-      }
-      else {
-        std::cout << "Unrecognized command: " << command << std::endl;
-      }
+    } else if (command == "SYNTAX") {
+      checkSyntax(program.programSource);
+    } else {
+      std::cout << "Unrecognized command: " << command << std::endl;
     }
   }
-
+}
 
 // List lines between start and end
 void list(int start, int end) {
-    for (std::map<int, std::string>::const_iterator it = program.programSource.begin();
-         it != program.programSource.end(); ++it) {
-        int linenum = it->first;
-        if (linenum >= start && linenum <= end) {
-            std::cout << linenum << " " << it->second << std::endl;
-        }
+  for (std::map<int, std::string>::const_iterator it =
+           program.programSource.begin();
+       it != program.programSource.end(); ++it) {
+    int linenum = it->first;
+    if (linenum >= start && linenum <= end) {
+      std::cout << linenum << " " << it->second << std::endl;
     }
+  }
 }
 
-  int main(int argc, char *argv[]) {
-    if (argc > 1) {
-      program.filename = argv[1];
+int main(int argc, char *argv[]) {
+  if (argc > 1) {
+    program.filename = argv[1];
     load(program);
-    }
-    interactiveLoop();
-    return 0;
   }
+  interactiveLoop();
+  return 0;
+}

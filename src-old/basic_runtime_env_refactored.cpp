@@ -31,8 +31,8 @@ void load(const std::string &filename) {
       program.programSource[linenum] = remainder;
     }
   }
-  std::cout << "Loaded " << program.programSource.size() << " lines from " << filename
-            << std::endl;
+  std::cout << "Loaded " << program.programSource.size() << " lines from "
+            << filename << std::endl;
 }
 
 void list(int start = 0, int end = INT_MAX) {
@@ -102,19 +102,18 @@ void interactiveLoop() {
       } catch (const std::runtime_error &e) {
         std::cerr << "Runtime error: " << e.what() << std::endl;
       }
-      } else if (command == "SYNTAX") {
-        checkSyntax(program.programSource);
-      }
-      else {
-        std::cout << "Unrecognized command: " << command << std::endl;
-      }
+    } else if (command == "SYNTAX") {
+      checkSyntax(program.programSource);
+    } else {
+      std::cout << "Unrecognized command: " << command << std::endl;
     }
   }
+}
 
-  int main(int argc, char *argv[]) {
-    if (argc > 1) {
-      load(argv[1]);
-    }
-    interactiveLoop();
-    return 0;
+int main(int argc, char *argv[]) {
+  if (argc > 1) {
+    load(argv[1]);
   }
+  interactiveLoop();
+  return 0;
+}

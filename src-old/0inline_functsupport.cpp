@@ -1,10 +1,10 @@
 /
-//=======================================================================================
-//   inline functsupport
-//
+    //=======================================================================================
+    //   inline functsupport
+    //
 
-IdentifierReturn evaluateFunction(const std::string &name,
-                                  const std::vector<ArgsInfo> &args) {
+    IdentifierReturn evaluateFunction(const std::string &name,
+                                      const std::vector<ArgsInfo> &args) {
   IdentifierReturn temp;
 
   temp.isstring = false; //  all us of temp in this routine is returning a
@@ -33,9 +33,9 @@ IdentifierReturn evaluateFunction(const std::string &name,
     }
 
   if (name == "SIN" || name == "COS" || name == "TAN" || name == "SQR" ||
-          name == "STRING$" || name == "LOG" || name == "LOG10" ||
-          name == "CLOG" || name == "EXP" || name == "INT" || name == "ROUND" ||
-          name == "FLOOR" || name == "CEIL" | name == "RND")
+      name == "STRING$" || name == "LOG" || name == "LOG10" || name == "CLOG" ||
+      name == "EXP" || name == "INT" || name == "ROUND" || name == "FLOOR" ||
+      name == "CEIL" | name == "RND")
     if (args[0].isstring) {
       std::cerr << "Error on " << name
                 << " passing a string where number expected [" << args[0].s

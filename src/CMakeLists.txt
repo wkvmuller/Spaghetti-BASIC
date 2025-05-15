@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.5)
 project(SpaghettiBASIC LANGUAGES CXX)
 
-# enable_testing()
-# list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMAKE")
-# add_subdirectory(src bin)
+enable_testing()
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMAKE")
+add_subdirectory(src bin)
 
 # Enforce C++11
 set(CMAKE_CXX_STANDARD 11)
@@ -31,5 +31,5 @@ set(SOURCES
 # Define the executable
 add_executable(spaghetti_basic ${SOURCES})
 
-# include(Format)
-# Format(main .)
+include(Format)
+Format(main .)
