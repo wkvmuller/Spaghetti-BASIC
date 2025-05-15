@@ -83,7 +83,7 @@ ArgsInfo makeArgsInfo(long long line, std::string idname,
 //--------------------------------------------------------------------------------
 //             prototypes
 //
-
+extern std::string evalStringExpression(const std::string &expr);
 double evalExpression(const std::string &expr);
 static std::string trim(const std::string &s);
 
@@ -633,9 +633,41 @@ void executeINPUT(const std::string &line) {
 void executeINPUTFILE(const std::string &line) {
   std::cout << "Stub of INPUTFILE" << std::endl;
 }
+
+// LET statement: LET <var> = <expr>
 void executeLET(const std::string &line) {
-  std::cout << "Stub of LET" << std::endl;
+    static const std::regex rgx(
+        R"(^\s*LET\s+([A-Z][A-Z0-9_]{0,31}\$?)\s*=\s*(.+)$)",
+        std::regex::icase
+    );
+    std::smatch m;
+    if (!std::regex_match(line, m, rgx)) {
+        throw std::runtime_error("SYNTAX ERROR: Invalid LET syntax: " + line);
+    }
+
+    std::string varName = m[1].str();
+    bool isString = false;
+    if (!varName.empty() && varName.back() == '$') {
+        isString = true;
+        varName.pop_back();
+    }
+
+    std::string expr = m[2].str();
+    if (isString) {
+        // Evaluate as string expression
+        std::string val = evalStringExpression(expr);
+        VarInfo &slot = program.stringVariables[varName];
+        slot.stringValue = val;
+        slot.isString    = true;
+    } else {
+        // Evaluate as numeric expression
+        double val = evalExpression(expr);
+        VarInfo &slot = program.numericVariables[varName];
+        slot.numericValue = val;
+        slot.isString     = false;
+    }
 }
+
 void executeMAT(const std::string &line) {
   std::cout << "Stub of MAT" << std::endl;
 }

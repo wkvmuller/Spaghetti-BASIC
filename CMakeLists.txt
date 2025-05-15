@@ -23,7 +23,6 @@ set(SOURCES
     src/program_structure.cpp
     src/renumber.cpp
     src/syntax.cpp
-
     src/evalExpression.cpp
     src/evalStringExpression.cpp
 )
