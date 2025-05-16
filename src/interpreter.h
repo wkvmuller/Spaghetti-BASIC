@@ -117,10 +117,6 @@ void executeMATPRINTFILE(const std::string &line);
 void executeMATREAD(const std::string &line);
 void executeON(const std::string &line);
 void executeOPEN(const std::string &line);
-void executePRINT(const std::string &line, std::ostream &out = std::cout);
-void executePRINTUSING(const std::string &line, std::ostream &out = std::cout);
-void executePRINTFILE   (const std::string &line);
-void executePRINTFILEUSING(const std::string &line);
 void executeREM(const std::string &);
 void executeREPEAT(const std::string &);
 void executeRETURN(const std::string &);
@@ -129,6 +125,10 @@ void executeSTOP(const std::string &);
 void executeUNTIL(const std::string &line);
 void executeWEND(const std::string &);
 void executeWHILE(const std::string &line);
+extern void executePRINTFILE(const std::string &line);
+extern void executePRINTUSING(const std::string &line, std::ostream &out = std::cout);
+extern void executePRINTFILEUSING(const std::string &line);
+
 
 //=========================================================
 #endif // INTERPRETER_H

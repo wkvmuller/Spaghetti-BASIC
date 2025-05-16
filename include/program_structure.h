@@ -68,7 +68,7 @@ struct PROGRAM_STRUCTURE {
     size_t nextLineNumber = 0;
     size_t nextLineNumberSet = 0;
     int currentLine = 0;
-    int seedvalue = 0;
+    int seedValue = 0;
 
     std::map<std::string, VarInfo> numericVariables;
     std::map<std::string, VarInfo> stringVariables;

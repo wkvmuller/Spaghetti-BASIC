@@ -129,5 +129,8 @@ void executeWEND(const std::string &line);
 void executeREPEAT(const std::string &line);
 void executeUNTIL(const std::string &line);
 void executeSEED(const std::string &line);
+extern void executePRINTFILE(const std::string &line);
+extern void executePRINTUSING(const std::string &line, std::ostream &out = std::cout);
+extern void executePRINTFILEUSING(const std::string &line);
 
 #endif // INTERPRETER_H

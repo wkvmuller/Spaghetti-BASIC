@@ -20,6 +20,7 @@ set(SOURCES
     src/syntax.cpp
     src/program_structure.cpp
     src/InputOutput.cpp
+    src/inlinefunctsupport.cpp
 )
 
 # Define the executable
