@@ -7,6 +7,8 @@
 #include <stack>
 #include <utility>
 #include <cstddef>
+#include <fstream>
+#include <memory>
 
 const size_t DENSE_MATRIX_THRESHOLD = 10000;
 
@@ -40,45 +42,57 @@ struct MatrixValue {
         }
     }
 };
+// Structure to hold FOR loop state
+struct ForInfo {
+    std::string varName;  // loop variable
+    double endValue;      // upper bound
+    double step;          // step increment
+    int forLine;          // line number of the FOR statement
+};
+
+struct UserFunction {
+    std::string param;  // e.g. "X"
+    std::string expr;   // e.g. "SIN(X)+10"
+};
+// File handle wrapper
+struct FileHandle {
+    std::unique_ptr<std::fstream> stream;
+};
 
 struct PROGRAM_STRUCTURE {
-    // Program source
+    std::map<int, std::string> programSource;
     std::string filename;
     std::string filepath;
-    alignas(16) size_t filesize_bytes = 0;
+    size_t filesize_bytes = 0;
     size_t filesize_lines = 0;
     size_t nextLineNumber = 0;
     size_t nextLineNumberSet = 0;
     int currentLine = 0;
+    int seedvalue = 0;
+
+    std::map<std::string, VarInfo> numericVariables;
+    std::map<std::string, VarInfo> stringVariables;
+
+    std::map<std::string, MatrixValue> numericMatrices;
+    std::map<std::string, MatrixValue> stringMatrices;
+
+    std::vector<int> gosubStack;
     
-    alignas(16) std::map<int, std::string> programSource;
+    std::vector<std::pair<std::string, int>> loopStack;
     
-    // Variables
-    alignas(16) std::map<std::string, VarInfo> numericVariables;
-    alignas(16) std::map<std::string, VarInfo> stringVariables;
+    std::map<std::string, UserFunction> userFunctions;
 
-    // Matrices
-    alignas(16) std::map<std::string, MatrixValue> numericMatrices;
-    alignas(16) std::map<std::string, MatrixValue> stringMatrices;
-
-    // GOSUB stack
-    alignas(16) std::vector<int> gosubStack;
-
-    // Loop stack (FOR/NEXT, WHILE/WEND, REPEAT/UNTIL)
-    alignas(16) std::vector<std::pair<std::string, int>> loopStack;
-
-    // DEF FN user-defined functions
-    alignas(16) std::map<std::string, std::string> userFunctions;
-
-    // DATA statements
-    alignas(16) std::vector<VarInfo> dataValues;
+    std::vector<VarInfo> dataValues;
     size_t dataPointer = 0;
 
-    // PRINT USING formats
-    alignas(16) std::map<int, std::string> printUsingFormats;
+    std::map<int, std::string> printUsingFormats;
+
+    // Added file handles map
+    std::map<int, FileHandle> fileHandles;
+    
+    std::vector<ForInfo> forStack;
 };
 
-// Declare the global instance
 extern PROGRAM_STRUCTURE program;
 
 #endif // PROGRAM_STRUCTURE_H

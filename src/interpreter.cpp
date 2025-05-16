@@ -11,6 +11,11 @@
 #include <stack>
 #include <stdexcept>
 #include <string>
+#include <regex>
+#include <sstream>
+#include <iostream>
+#include <stdexcept>
+#include <iomanip>
 
 extern PROGRAM_STRUCTURE program;
 
@@ -98,8 +103,9 @@ void executeFORMAT(const std::string &);
 void executeGO(const std::string &line);
 void executeGOSUB(const std::string &line);
 void executeIF(const std::string &);
-void executeINPUT(const std::string &line);
-void executeINPUTFILE(const std::string &line);
+extern void executeINPUTops(const std::string &line);
+/*void executeINPUT(const std::string &line);
+void executeINPUTFILE(const std::string &line); */
 void executeLET(const std::string &line);
 void executeMAT(const std::string &line);
 void executeMATPRINT(const std::string &line);
@@ -107,9 +113,7 @@ void executeMATPRINTFILE(const std::string &line);
 void executeMATREAD(const std::string &line);
 void executeON(const std::string &line);
 void executeOPEN(const std::string &line);
-void executePRINT(const std::string &line);
-void executePRINTFILE(const std::string &line);
-void executePRINTFILEUSING(const std::string &line);
+extern void executePRINTexprconst std::string &line);
 void executeREM(const std::string &);
 void executeREPEAT(const std::string &);
 void executeRETURN(const std::string &);
@@ -123,207 +127,12 @@ void executeWHILE(const std::string &line);
 //   inline functsupport
 //
 
-IdentifierReturn evaluateFunction(const std::string &name,
-                                  const std::vector<ArgsInfo> &args) {
-  IdentifierReturn temp;
-  temp.isstring = false;
+extern double evaluateFunction(const std::string &name,
+                                  const std::vector<ArgsInfo> &args);
+                                  
 
-  if (name == "ASCII")
-    if (!args[0].isstring || args[0].s.empty()) {
-      std::cerr << "Bas string passed to ASCII(" << args[0].s
-                << ")  line:" << args[0].linenumber << std::endl;
-      temp.d = 0.0;
-      return temp;
-    } else {
-      temp.d = static_cast<double>(static_cast<unsigned char>(args[0].s[0]));
-      return temp;
-    }
-
-  if (name == "LEN$")
-    if (!args[0].isstring) {
-      std::cerr << "bad non string passed to LEN$(" << args[0].d
-                << ") on line: " << args[0].linenumber << std::endl;
-      temp.d = -1;
-      return temp;
-    } else {
-      temp.d = static_cast<double>(args[0].s.length());
-      return temp;
-    }
-
-  if (name == "STRING$")
-    if (!args[0].isstring)
-      temp.d = static_cast<double>(std::stoi(args[0].s));
-  return temp;
-
-  if (name == "LOGX") {
-    temp.d = std::log(args[1].d) / std::log(args[0].d);
-    return temp;
-  }
-  if (name == "SIN") {
-    temp.d = std::sin(args[0].d);
-    return temp;
-  }
-  if (name == "COS") {
-    temp.d = std::cos(args[0].d);
-    return temp;
-  }
-  if (name == "TAN") {
-    temp.d = std::tan(args[0].d);
-    return temp;
-  }
-  if (name == "SQR") {
-    temp.d = std::sqrt(args[0].d);
-    return temp;
-  }
-  if (name == "LOG") {
-    temp.d = std::log(args[0].d);
-    return temp;
-  }
-  if (name == "LOG10" || name == "CLOG") {
-    temp.d = std::log10(args[0].d);
-    return temp;
-  }
-  if (name == "EXP") {
-    temp.d = std::exp(args[0].d);
-    return temp;
-  }
-  if (name == "INT") {
-    temp.d = std::floor(args[0].d);
-    return temp;
-  }
-  if (name == "ROUND") {
-    temp.d = std::round(args[0].d);
-    return temp;
-  }
-  if (name == "FLOOR") {
-    temp.d = std::floor(args[0].d);
-    return temp;
-  }
-  if (name == "CEIL") {
-    temp.d = std::ceil(args[0].d);
-    return temp;
-  }
-  if (name == "POW") {
-    temp.d = std::pow(args[0].d, args[1].d);
-    return temp;
-  }
-  if (name == "RND") {
-    temp.d = static_cast<double>(rand()) / RAND_MAX;
-    return temp;
-  }
-  if (name == "ASIN") {
-    temp.d = std::asin(args[0].d);
-    return temp;
-  }
-  if (name == "ACOS") {
-    temp.d = std::acos(args[0].d);
-    return temp;
-  }
-  if (name == "ATAN") {
-    temp.d = std::atan(args[0].d);
-    return temp;
-  }
-  if (name == "COT") {
-    temp.d = 1.0 / std::tan(args[0].d);
-    return temp;
-  }
-  if (name == "SEC") {
-    temp.d = 1.0 / std::cos(args[0].d);
-    return temp;
-  }
-  if (name == "CSC") {
-    temp.d = 1.0 / std::sin(args[0].d);
-    return temp;
-  }
-  if (name == "DEG2RAD") {
-    temp.d = args[0].d * M_PI / 180.0;
-    return temp;
-  }
-  if (name == "RAD2DEG") {
-    temp.d = args[0].d * 180.0 / M_PI;
-    return temp;
-  }
-  if (name == "DET") {
-    std::cerr << "DET() not implemented - placeholder only." << std::endl;
-    temp.d = 0.0;
-    return temp;
-  }
-
-  std::cerr << "Unknown function: " << name << std::endl;
-  temp.d = 0.0;
-  return temp;
-}
-
-IdentifierReturn evaluateStringFunction(const std::string &name,
-                                        const std::vector<ArgsInfo> &args) {
-  IdentifierReturn temp;
-  temp.isstring = true;
-
-  if (name == "TIME$") {
-    time_t now = time(nullptr);
-    char buffer[64];
-    strftime(buffer, sizeof(buffer), "%I:%M:%S %p", localtime(&now));
-    temp.s = buffer;
-    return temp;
-  }
-
-  if (name == "DATE$") {
-    time_t now = time(nullptr);
-    char buffer[64];
-    strftime(buffer, sizeof(buffer), "%Y-%m-%d", localtime(&now));
-    temp.s = buffer;
-    return temp;
-  }
-
-  if (name == "CHR$") {
-    int c = static_cast<int>(args[0].d);
-    if (c < 0 || c > 255) {
-      temp.s = "";
-      return temp;
-    }
-    temp.s = std::string(1, static_cast<char>(c));
-    return temp;
-  }
-
-  if (name == "LEFT$") {
-    int n = static_cast<int>(args[1].d);
-    if (n < 0)
-      n = 0;
-    if (n > static_cast<int>(args[0].s.length()))
-      n = args[0].s.length();
-    temp.s = args[0].s.substr(0, n);
-    return temp;
-  }
-
-  if (name == "RIGHT$") {
-    int n = static_cast<int>(args[1].d);
-    if (n < 0)
-      n = 0;
-    if (n > static_cast<int>(args[0].s.length()))
-      n = args[0].s.length();
-    temp.s = args[0].s.substr(args[0].s.length() - n);
-    return temp;
-  }
-
-  if (name == "MID$") {
-    int start = static_cast<int>(args[1].d);
-    int len = static_cast<int>(args[2].d);
-    if (start < 1)
-      start = 1;
-    if (len < 0)
-      len = 0;
-    if (start > static_cast<int>(args[0].s.length()))
-      start = args[0].s.length();
-    if (start - 1 + len > static_cast<int>(args[0].s.length()))
-      len = args[0].s.length() - (start - 1);
-    temp.s = args[0].s.substr(start - 1, len);
-    return temp;
-  }
-
-  std::cerr << "ERROR: Unknown string function " << name << std::endl;
-  temp.s = "";
-  return temp;
-}
+extern std::string evaluateStringFunction(const std::string &name,
+                                        const std::vector<ArgsInfo> &args);
 
 // ========================= Expression Evaluator =========================
 //
@@ -335,51 +144,10 @@ IdentifierReturn evaluateStringFunction(const std::string &name,
 
 // extern PROGRAM_STRUCTURE program;
 // OPEN statement: OPEN "filename" FOR INPUT|OUTPUT|APPEND AS #<channel>
-void executeOPEN(const std::string &line) {
-  static const std::regex rgx("^\\s*OPEN\\s*\"([^\"]+)\"\\s+FOR\\s+(INPUT|"
-                              "OUTPUT|APPEND)\\s+AS\\s*#\\s*(\\d+)\\s*$",
-                              std::regex::icase);
-
-  std::smatch m;
-  if (!std::regex_match(line, m, rgx))
-    throw std::runtime_error("SYNTAX ERROR: Invalid OPEN: " + line);
-
-  std::string path = m[1].str();
-  std::string mode = m[2].str();
-  int chan = std::stoi(m[3].str());
-
-  std::ios_base::openmode om;
-  if (mode == "INPUT")
-    om = std::ios::in;
-  else if (mode == "OUTPUT")
-    om = std::ios::out | std::ios::trunc;
-  else
-    om = std::ios::out | std::ios::app;
-
-  // Create or overwrite the stream on that channel
-  auto &fh = program.fileHandles[chan];
-  fh.stream.reset(new std::fstream(path, om));
-  if (!fh.stream->is_open())
-    throw std::runtime_error("RUNTIME ERROR: Cannot open file: " + path);
-}
+extern void executeOPEN(const std::string &line);
 
 // statement: CLOSE #<channel>
-void executeCLOSE(const std::string &line) {
-  static const std::regex rgx(R"(^\s*CLOSE\s*#\s*(\d+)\s*$)",
-                              std::regex::icase);
-  std::smatch m;
-  if (!std::regex_match(line, m, rgx))
-    throw std::runtime_error("SYNTAX ERROR: Invalid CLOSE: " + line);
-
-  int chan = std::stoi(m[1].str());
-  auto it = program.fileHandles.find(chan);
-  if (it == program.fileHandles.end() || !it->second.stream)
-    throw std::runtime_error("RUNTIME ERROR: File not open on channel " +
-                             std::to_string(chan));
-
-  it->second.stream->close();
-  program.fileHandles.erase(it);
-}
+extern void executeCLOSE(const std::string &line);
 
 // —————————————————————————————————————————————————————————
 // DATA statement: parses DATA <datum>{,<datum>}
@@ -463,9 +231,26 @@ void evaluateMATExpression(const std::string &target,
 void executeBEEP(const std::string & /*line*/) {
   std::cout << '\a' << std::flush;
 }
-void executeDEF(const std::string &) {
-  std::cout << "Stub of DEF" << std::endl;
+
+// DEF FN<name>(<param>) = <expression>
+void executeDEF(const std::string &line) {
+    static const std::regex rgx(
+        R"(^\s*DEF\s+FN([A-Z][A-Z0-9_]{0,31})\s*\(\s*([A-Z][A-Z0-9_]{0,31})\s*\)\s*=\s*(.+)$)",
+        std::regex::icase
+    );
+    std::smatch m;
+    if (!std::regex_match(line, m, rgx)) {
+        throw std::runtime_error("SYNTAX ERROR: Invalid DEF: " + line);
+    }
+
+    std::string name  = m[1].str();  // function name
+    std::string param = m[2].str();  // single parameter
+    std::string expr  = m[3].str();  // body expression
+
+    // Store or overwrite
+    program.userFunctions[name] = UserFunction{param, expr};
 }
+
 void executeEND(const std::string &line) {
   throw std::runtime_error("RUNTIME ERROR: END of program");
 }
@@ -620,19 +405,39 @@ void executeDIM(const std::string &line) {
   }
 }
 
+// FOR handler: FOR <var> = <start> TO <end> [STEP <step>]
 void executeFOR(const std::string &line) {
-  std::cout << "Stub of FOR" << std::endl;
+    static const std::regex rgx(
+        R"(\\s*FOR\\s+([A-Z][A-Z0-9_]{0,31})\\s*=\\s*(.+?)\\s+TO\\s+(.+?)(?:\\s+STEP\\s+(.+))?\\s*$)",
+        std::regex::icase
+    );
+    std::smatch m;
+    if (!std::regex_match(line, m, rgx)) {
+        throw std::runtime_error("SYNTAX ERROR: Invalid FOR: " + line);
+    }
+    std::string var = m[1].str();
+    double start = evalExpression(m[2].str());
+    double end   = evalExpression(m[3].str());
+    double step  = m[4].matched ? evalExpression(m[4].str()) : 1.0;
+
+    if (program.forStack.size() >= 15) {
+        throw std::runtime_error("RUNTIME ERROR: FOR nesting exceeds 15 levels");
+    }
+
+    // Initialize loop variable
+    VarInfo &v = program.numericVariables[var];
+    v.numericValue = start;
+    v.isString = false;
+
+    // Push loop info
+    ForInfo fi{var, end, step, program.currentLine};
+    program.forStack.push_back(fi);
 }
-void executeFORMAT(const std::string &) {
-  std::cout << "Stub of FORMAT" << std::endl;
-}
+
 void executeIF(const std::string &) { std::cout << "Stub of IF" << std::endl; }
-void executeINPUT(const std::string &line) {
-  std::cout << "Stub of INPUT" << std::endl;
-}
-void executeINPUTFILE(const std::string &line) {
-  std::cout << "Stub of INPUTFILE" << std::endl;
-}
+
+extern void executeINPUT(const std::string &line);
+extern void executeINPUTFILE(const std::string &line);
 
 // LET statement: LET <var> = <expr>
 void executeLET(const std::string &line) {
@@ -680,68 +485,26 @@ void executeMATPRINTFILE(const std::string &line) {
 void executeMATREAD(const std::string &line) {
   std::cout << "Stub of MATREAD" << std::endl;
 }
+// FORMAT statement: defines a format string for PRINT USING
+// Syntax:  <line> := "format-spec"
+// e.g.    100 := "###,###.###   lllllllllll   cccccc    rrrrrrr"
+// Corrected executeFORMAT regex with proper raw string delimiter
+static const std::regex rgx(
+    R"FMT(^\s*(\d+)\s*:=\s*"([^"]*)"\s*$)FMT",
+    std::regex::icase
+);
 
-void executePRINTexpr(const std::string &line) {
-  // Skip past the “PRINT” keyword
-  std::istringstream iss(line);
-  std::string kw;
-  iss >> kw; // eats "PRINT"
+extern void executeFORMAT(const std::string &line);
 
-  // Peek at the next non-whitespace character
-  char c = iss.peek();
-  if (c == '#') {
-    // It’s the file-output form.  Pass the full line through.
-    // executePRINTFILEUSING could be chosen here if you detect “USING” later.
-    executePRINTFILE(line);
-  } else {
-    iss >> kw;
-    if (kw == "USING") {
-      executePRINTFILEUSING(line);
-    } else {
-      // Normal console PRINT
-      executePRINT(line);
-    }
-  }
-}
+extern void executePRINTexpr(const std::string &line);
 
 // Forward decls (you should have these elsewhere or adapt)
 double evalExpression(const std::string &expr);
-static std::string trim(const std::string &s);
 
-// PRINT handler
-void executePRINT(const std::string &line) {
-  // Match everything after PRINT
-  static const std::regex rgx(R"(^\s*PRINT\s+(.*)$)", std::regex::icase);
-  std::smatch m;
-  if (!std::regex_match(line, m, rgx)) {
-    throw std::runtime_error("SYNTAX ERROR: Invalid PRINT: " + line);
-  }
 
-  std::string list = m[1].str();
-  std::stringstream ss(list);
-  std::string item;
-  bool first = true;
+// NEW: pass in the output stream; defaults to std::cout
+extern void executePRINT(const std::string &line, std::ostream &out = std::cout);
 
-  while (std::getline(ss, item, ',')) {
-    item = trim(item);
-    if (!first) {
-      std::cout << ' ';
-    }
-    first = false;
-
-    // String literal?
-    if (item.size() >= 2 && item.front() == '"' && item.back() == '"') {
-      std::cout << item.substr(1, item.size() - 2);
-    } else {
-      // Numeric expression
-      double val = evalExpression(item);
-      // You can control formatting here (fixed, precision, etc.)
-      std::cout << val;
-    }
-  }
-
-  std::cout << std::endl;
-}
 
 // Example trim helper
 static std::string trim(const std::string &s) {
@@ -753,12 +516,16 @@ static std::string trim(const std::string &s) {
   return s.substr(start, end - start + 1);
 }
 
-void executePRINTFILE(const std::string &line) {
-  std::cout << "Stub of PRINTFILE" << std::endl;
-}
-void executePRINTFILEUSING(const std::string &line) {
-  std::cout << "Stub of PRINTFILEUSING" << std::endl;
-}
+// PRINT to file handler
+extern void executePRINTFILE(const std::string &line);
+
+
+// PRINT USING handler
+// Syntax: PRINT USING <formatLine> <var1>,<var2$>,...
+// Optional output stream overload
+extern void executePRINTUSING(const std::string &line, std::ostream &out = std::cout);
+
+extern void executePRINTFILEUSING(const std::string &line);
 
 // Helper to find a line in programSource or throw
 static std::map<int, std::string>::const_iterator findLine(int ln) {
@@ -878,33 +645,80 @@ void executeREPEAT(const std::string &) {
   std::cout << "Stub of REPEAT" << std::endl;
 }
 
+// SEED <unsigned-integer>
 void executeSEED(const std::string &line) {
-  std::cout << "Stub of SEED" << std::endl;
+    static const std::regex rgx(R"(^\s*SEED\s+(\d+)\s*$)", std::regex::icase);
+    std::smatch m;
+    if (!std::regex_match(line, m, rgx)) {
+        throw std::runtime_error("SYNTAX ERROR: Invalid SEED: " + line);
+    }
+    unsigned int seed = static_cast<unsigned int>(std::stoul(m[1].str()));
+    std::srand(seed);
+    program.seedValue = seed;
 }
 
 void executeSTOP(const std::string &line) {
   throw std::runtime_error("RUNTIME ERROR: STOP encountered");
 }
+
 void executeUNTIL(const std::string &line) {
   std::cout << "Stub of UNTIL" << std::endl;
 }
+
 void executeWEND(const std::string &) {
   std::cout << "Stub of WEND" << std::endl;
 }
+
 void executeWHILE(const std::string &line) {
   std::cout << "Stub of WHILE" << std::endl;
 }
 
+// NEXT handler: NEXT <var>
 void executeNEXT(const std::string &line) {
-  std::cout << "Stub of NEXT" << std::endl;
+    static const std::regex rgx(
+        R"(\\s*NEXT\\s+([A-Z][A-Z0-9_]{0,31})\\s*$)",
+        std::regex::icase
+    );
+    std::smatch m;
+    if (!std::regex_match(line, m, rgx)) {
+        throw std::runtime_error("SYNTAX ERROR: Invalid NEXT: " + line);
+    }
+    std::string var = m[1].str();
+
+    if (program.forStack.empty()) {
+        throw std::runtime_error("RUNTIME ERROR: NEXT without FOR");
+    }
+
+    // Check that top of stack matches
+    ForInfo fi = program.forStack.back();
+    if (fi.varName != var) {
+        throw std::runtime_error("RUNTIME ERROR: NEXT variable mismatch: expected " + fi.varName);
+    }
+
+    // Update loop variable
+    VarInfo &v = program.numericVariables[var];
+    double val = v.numericValue + fi.step;
+    v.numericValue = val;
+
+    // Check loop termination
+    bool done = (fi.step > 0.0 ? val > fi.endValue : val < fi.endValue);
+    if (done) {
+        // Pop loop and continue
+        program.forStack.pop_back();
+    } else {
+        // Repeat: jump back to just after the FOR line
+        program.nextLineNumber = fi.forLine;
+        program.nextLineNumberSet = true;
+    }
 }
+
 // ========================= Dispatcher =========================
 
 enum StatementType {
   ST_UNKNOWN,
   ST_LET,
   ST_PRINTexpr,
-  ST_INPUT,
+  ST_INPUTops,
   ST_GOTO,
   ST_IF,
   ST_FOR,
@@ -927,7 +741,7 @@ enum StatementType {
   ST_OPEN,
   ST_CLOSE,
   ST_PRINT,
-  ST_INPUTFILE,
+  ST_INPUTope,
   ST_WHILE,
   ST_WEND,
   ST_REPEAT,
@@ -942,7 +756,7 @@ StatementType identifyStatement(const std::string &keyword) {
   if (keyword == "PRINT")
     return ST_PRINTexpr;
   if (keyword == "INPUT")
-    return ST_INPUT;
+    return ST_INPUTops;
   if (keyword == "GOTO")
     return ST_GOTO;
   if (keyword == "IF")
@@ -986,7 +800,7 @@ StatementType identifyStatement(const std::string &keyword) {
   if (keyword == "PRINT#")
     return ST_PRINTexpr;
   if (keyword == "INPUT#")
-    return ST_INPUTFILE;
+    return ST_INPUTops;
   if (keyword == "WHILE")
     return ST_WHILE;
   if (keyword == "WEND")
@@ -1024,8 +838,8 @@ void runInterpreter(PROGRAM_STRUCTURE &program) {
       case ST_PRINTexpr:
         executePRINTexpr(code);
         break;
-      case ST_INPUT:
-        executeINPUT(code);
+      case ST_INPUTops:
+        executeINPUTops(code);
         break;
       case ST_GOTO:
         executeGOTO(code);
@@ -1091,11 +905,11 @@ void runInterpreter(PROGRAM_STRUCTURE &program) {
                 case ST_PRINTFILE:
                 executePRINTexpr(code);
                 break;
-        */
       case ST_INPUTFILE:
         executeINPUTFILE(code);
         break;
-      case ST_WHILE:
+         */
+     case ST_WHILE:
         executeWHILE(code);
         break;
       case ST_WEND:

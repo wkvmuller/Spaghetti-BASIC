@@ -101,8 +101,6 @@ double determinant(const std::vector<double> &mat, int n);
 
 // BASIC statement handlers
 void executeLET(const std::string &line);
-void executePRINT(const std::string &line);
-void executeINPUT(const std::string &line);
 void executeGO(const std::string &line);
 void executeIF(const std::string &line);
 void executeFOR(const std::string &line);
@@ -122,9 +120,6 @@ void executeMAT(const std::string &line);
 void executeMATREAD(const std::string &line);
 void executeMATPRINT(const std::string &line);
 void executeMATPRINTFILE(const std::string &line);
-void executePRINTFILE(const std::string &line);
-void executeINPUTFILE(const std::string &line);
-void executePRINTFILEUSING(const std::string &line);
 void executeFORMAT(const std::string &line);
 void executeBEEP(const std::string &line);
 void executeOPEN(const std::string &line);

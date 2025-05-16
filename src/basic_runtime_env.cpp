@@ -15,6 +15,7 @@
 
 extern void handleRENUMBER(int newStart, int delta, int oldStart);
 extern void executeOPEN(const std::string &line);
+extern void runInterpreter(PROGRAM_STRUCTURE program);
 
 extern PROGRAM_STRUCTURE program;
 // PROGRAM_STRUCTURE program;
