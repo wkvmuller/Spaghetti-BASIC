@@ -215,9 +215,8 @@ static void processInputList(const std::string &varList, std::istream &in) {
 // 3) INPUT var1,var2$,...
 void executeINPUTops(const std::string &line) {
   static const std::regex promptRe(
-      R"(^\s*INPUT\s+"([^"]*)"\s *,\s * (.+) $) ", std::regex::icase);
-      static const std::regex fileRe(R"(^\s*INPUT\s*#\s*(\d+)\s*,\s*(.+)$)",
-                                     std::regex::icase);
+      R"(^\s*INPUT\s+"([^"]*)"s *,s * (.+) $)", std::regex::icase);
+      static const std::regex fileRe(R"(^\s*INPUT\s*#\s*(\d+)\s*,\s*(.+)$)", std::regex::icase);
   static const std::regex varRe(R"(^\s*INPUT\s+(.+)$)", std::regex::icase);
 
   std::smatch m;
@@ -287,103 +286,127 @@ void executePRINT(const std::string &line, std::ostream &out) {
   out << std::endl;
 }
 
-/**
- * PRINT USING:
- *   PRINT USING <fmtLine> <item1>,<item2$>,...
- *   (also supports leading "PRINT #<chan>, USING ..." if you route here)
- */
-void executePRINTUSING(const std::string &line, std::ostream &out) {
-  static const std::regex rgx(
-      R"(^\s*PRINT(?:\s*#\s*\d+\s*,)?\s+USING\s+(\d+)\s+(.*)\s*$)",
-      std::regex::icase);
-  std::smatch m;
-  if (!std::regex_match(line, m, rgx))
-    throw std::runtime_error("SYNTAX ERROR: Invalid PRINT USING: " + line);
-
-  // Fetch format spec
-  int fmtLine = std::stoi(m[1].str());
-  auto it = program.printUsingFormats.find(fmtLine);
-  if (it == program.printUsingFormats.end())
-    throw std::runtime_error("RUNTIME ERROR: FORMAT " +
-                             std::to_string(fmtLine) + " not defined");
-  const std::string spec = it->second;
-
-  // Split argument list
-  std::vector<std::string> args;
-  {
-    std::stringstream vs(m[2].str());
-    std::string tok;
-    while (std::getline(vs, tok, ',')) {
-      args.push_back(trim(tok));
-    }
-  }
-  if (args.empty())
-    throw std::runtime_error("RUNTIME ERROR: No arguments for PRINT USING");
-
-  // Walk spec, one run per arg
-  size_t argIdx = 0;
-  for (size_t i = 0; i < spec.size();) {
-    char ch = spec[i];
-    if (ch == '#' || ch == 'l' || ch == 'L' || ch == 'c' || ch == 'C' ||
-        ch == 'r' || ch == 'R') {
-      char type = std::toupper(ch);
-      size_t start = i;
-      while (i < spec.size() && std::toupper(spec[i]) == type)
-        ++i;
-      int width = int(i - start);
-
-      if (argIdx >= args.size())
-        throw std::runtime_error(
-            "RUNTIME ERROR: Not enough arguments for PRINT USING");
-
-      const std::string &expr = args[argIdx++];
-      if (type == '#') {
-        // numeric field: count decimals
-        std::string fld = spec.substr(start, width);
-        int prec = 0;
-        auto dp = fld.find('.');
-        if (dp != std::string::npos)
-          prec = int(fld.size() - dp - 1);
-        double num = evalExpression(expr);
-        std::ostringstream oss;
-        if (prec > 0)
-          oss << std::fixed << std::setprecision(prec);
-        oss << num;
-        std::string outVal = oss.str();
-        // right-justify
-        if ((int)outVal.size() < width)
-          out << std::string(width - outVal.size(), ' ');
-        out << outVal;
-      } else {
-        // string field
-        std::string s = evalStringExpression(expr);
-        if ((int)s.size() > width)
-          s = s.substr(0, width);
-        int pad = width - int(s.size());
-        if (type == 'L')
-          out << s << std::string(pad, ' ');
-        else if (type == 'R')
-          out << std::string(pad, ' ') << s;
-        else { // center
-          int left = pad / 2, right = pad - left;
-          out << std::string(left, ' ') << s << std::string(right, ' ');
-        }
-      }
-    } else {
-      // literal char
-      out << ch;
-      ++i;
-    }
-  }
-  out << std::endl;
-}
-
-// executePRINTexprconst std::string &line){
+// 1) PRINT items to console
+// 2) PRINT USING format to console
+// 3) PRINT #chan, items to file
 void executePRINTops(const std::string &line) {
   static const std::regex fileRe(R"(^\s*PRINT\s*#\s*(\d+)\s*,)",
                                  std::regex::icase);
   static const std::regex usingRe(R"(^\s*PRINT\s+USING\b)", std::regex::icase);
   static const std::regex printRe(R"(^\s*PRINT\b)", std::regex::icase);
+
+  std::smatch m;
+  if (std::regex_search(line, m, fileRe)) {
+    int chan = std::stoi(m[1].str());
+    auto it = program.fileHandles.find(chan);
+    if (it == program.fileHandles.end() || !it->second.stream ||
+        !it->second.stream->is_open())
+      throw std::runtime_error("RUNTIME ERROR: File channel " +
+                               std::to_string(chan) + " not open");
+    executePRINT(line, *it->second.stream);
+  } else if (std::regex_search(line, usingRe)) {
+    executePRINTUSING(line, std::cout);
+  } else if (std::regex_search(line, printRe)) {
+    executePRINT(line, std::cout);
+  } else {
+    throw std::runtime_error("SYNTAX ERROR: Invalid PRINT statement: " + line);
+  }
+}
+
+void executeINPUTops(const std::string &line) {
+    static const std::regex promptRe(
+        R"(^\s*INPUT\s+"([^"]*)"\s*,\s*(.+)$)", std::regex::icase);
+    static const std::regex fileRe(R"(^\s*INPUT\s*#\s*(\d+)\s*,\s*(.+)$)", std::regex::icase);
+    static const std::regex varRe(R"(^\s*INPUT\s+(.+)$)", std::regex::icase);
+    std::smatch m;
+    if (std::regex_match(line, m, promptRe)) {
+      std::cout << m[1].str();
+      processInputList(m[2].str(), std::cin);
+    }
+
+    else if (std::regex_match(line, m, fileRe)) {
+      int chan = std::stoi(m[1].str());
+      auto it = program.fileHandles.find(chan);
+      if (it == program.fileHandles.end() || !it->second.stream ||
+          !it->second.stream->is_open())
+        throw std::runtime_error("RUNTIME ERROR: File channel " +
+                                 std::to_string(chan) + " not open");
+      processInputList(m[2].str(), *it->second.stream);
+    } else if (std::regex_match(line, m, varRe)) {
+      processInputList(m[1].str(), std::cin);
+    } else {
+      throw std::runtime_error("SYNTAX ERROR: Invalid INPUT statement: " +
+                               line);
+    }
+}
+if (args.empty())
+  throw std::runtime_error("RUNTIME ERROR: No arguments for PRINT USING");
+
+// Walk spec, one run per arg
+size_t argIdx = 0;
+for (size_t i = 0; i < spec.size();) {
+  char ch = spec[i];
+  if (ch == '#' || ch == 'l' || ch == 'L' || ch == 'c' || ch == 'C' ||
+      ch == 'r' || ch == 'R') {
+    char type = std::toupper(ch);
+    size_t start = i;
+    while (i < spec.size() && std::toupper(spec[i]) == type)
+      ++i;
+    int width = int(i - start);
+
+    if (argIdx >= args.size())
+      throw std::runtime_error(
+          "RUNTIME ERROR: Not enough arguments for PRINT USING");
+
+    const std::string &expr = args[argIdx++];
+    if (type == '#') {
+      // numeric field: count decimals
+      std::string fld = spec.substr(start, width);
+      int prec = 0;
+      auto dp = fld.find('.');
+      if (dp != std::string::npos)
+        prec = int(fld.size() - dp - 1);
+      double num = evalExpression(expr);
+      std::ostringstream oss;
+      if (prec > 0)
+        oss << std::fixed << std::setprecision(prec);
+      oss << num;
+      std::string outVal = oss.str();
+      // right-justify
+      if ((int)outVal.size() < width)
+        out << std::string(width - outVal.size(), ' ');
+      out << outVal;
+    } else {
+      // string field
+      std::string s = evalStringExpression(expr);
+      if ((int)s.size() > width)
+        s = s.substr(0, width);
+      int pad = width - int(s.size());
+      if (type == 'L')
+        out << s << std::string(pad, ' ');
+      else if (type == 'R')
+        out << std::string(pad, ' ') << s;
+      else { // center
+        int left = pad / 2, right = pad - left;
+        out << std::string(left, ' ') << s << std::string(right, ' ');
+      }
+    }
+  } else {
+    // literal char
+    out << ch;
+    ++i;
+  }
+}
+out << std::endl;
+}
+R"(^\s*INPUT\s+"([^"]*)"\s*,\s*(.+)$)",
+// executePRINTexprconst std::string &line){
+void executeINPUTops(const std::string &line) {
+  static const std::regex promptRe(
+      R"(^\s*INPUT\s+"([^"]*)"\s *,\s * (.+) $) ", std::regex::icase);
+      static const std::regex fileRe(R"(^\s*INPUT\s*#\s*(\d+)\s*,\s*(.+)$)",
+                                     std::regex::icase);
+  static const std::regex varRe(R"(^\s*INPUT\s+(.+)$)", std::regex::icase);
 
   std::smatch m;
   // 3) File-based simple PRINT
