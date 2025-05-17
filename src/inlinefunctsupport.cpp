@@ -1,34 +1,36 @@
+#include "program_structure.h"
 
-#include <string>
-#include <map>
-#include <vector>
-#include <stack>
-#include <utility>
-#include <cstddef>
-#include <fstream>
-#include <memory>
 
 //=======================================================================================
 //   inline functsupport
 //
 
 double evaluateFunction(const std::string &name,
-                                  const std::vector<ArgsInfo> &args) {
+                        const std::vector<ArgsInfo> &args) {
 
   if (name == "ASCII")
     if (!args[0].isstring || args[0].s.empty()) {
-      std::cerr << "Bas string passed to ASCII(" << args[0].s
-                << ")  line:" << args[0].linenumber << std::endl;
-      return 0.0;
+      std::stringstream ss;
+
+      ss << "Bad string passed to ASCII(" << args[0].s
+         << ")  line:" << args[0].linenumber << std::endl;
+
+      std::string token = ss.str();
+
+      throw std::runtime_error(token);
     } else {
       return static_cast<double>(static_cast<unsigned char>(args[0].s[0]));
     }
 
   if (name == "LEN$")
     if (!args[0].isstring) {
-      std::cerr << "bad non string passed to LEN$(" << args[0].d
-                << ") on line: " << args[0].linenumber << std::endl;
-      return -1;
+      std::stringstream ss;
+      ss << "bad non string passed to LEN$(" << args[0].d
+         << ") on line: " << args[0].linenumber << std::endl;
+
+      std::string token = ss.str();
+
+      throw std::runtime_error(token);
     } else {
       return static_cast<double>(args[0].s.length());
     }
@@ -38,13 +40,13 @@ double evaluateFunction(const std::string &name,
       return static_cast<double>(std::stoi(args[0].s));
 
   if (name == "LOGX") {
-    return  std::log(args[1].d) / std::log(args[0].d);
+    return std::log(args[1].d) / std::log(args[0].d);
   }
   if (name == "SIN") {
     return std::sin(args[0].d);
   }
   if (name == "COS") {
-    return  std::cos(args[0].d);
+    return std::cos(args[0].d);
   }
   if (name == "TAN") {
     return std::tan(args[0].d);
@@ -68,7 +70,7 @@ double evaluateFunction(const std::string &name,
     return std::round(args[0].d);
   }
   if (name == "FLOOR") {
-    temp = std::floor(args[0].d);
+    return std::floor(args[0].d);
   }
   if (name == "CEIL") {
     return std::ceil(args[0].d);
@@ -98,24 +100,28 @@ double evaluateFunction(const std::string &name,
     return 1.0 / std::sin(args[0].d);
   }
   if (name == "DEG2RAD") {
-    return args[0].d * M_PI / 180.0;
+    return args[0].d * PI / 180.0;
   }
   if (name == "RAD2DEG") {
-    return args[0].d * 180.0 / M_PI;
+    return args[0].d * 180.0 / PI ;
   }
   if (name == "DET") {
-    std::cerr << "DET() not implemented - placeholder only." << std::endl;
-    temp = 0.0;
-    return temp;
-  }
+    std::stringstream ss;
+    ss << "DET() not implemented - placeholder only." << std::endl;
 
-  std::cerr << "Unknown function: " << name << std::endl;
-  temp.d = 0.0;
-  return temp;
+    std::string token = ss.str();
+    throw std::runtime_error(token);
+  }
+  std::stringstream ss;
+
+  ss << "Unknown function: " << name << std::endl;
+
+  std::string token = ss.str();
+  throw std::runtime_error(token);
 }
 
 std::string evaluateStringFunction(const std::string &name,
-                                        const std::vector<ArgsInfo> &args) {
+                                   const std::vector<ArgsInfo> &args) {
 
   if (name == "TIME$") {
     time_t now = time(nullptr);
@@ -134,8 +140,7 @@ std::string evaluateStringFunction(const std::string &name,
   if (name == "CHR$") {
     int c = static_cast<int>(args[0].d);
     if (c < 0 || c > 255) {
-      temp.s = "";
-      return temp;
+      return "";
     }
     return std::string(1, static_cast<char>(c));
   }
@@ -171,7 +176,10 @@ std::string evaluateStringFunction(const std::string &name,
       len = args[0].s.length() - (start - 1);
     return args[0].s.substr(start - 1, len);
   }
+  std::stringstream ss;
 
-  std::cerr << "ERROR: Unknown string function " << name << std::endl;
-  return "";
+  ss << "Unknown function: " << name << std::endl;
+
+  std::string token = ss.str();
+  throw std::runtime_error(token);
 }

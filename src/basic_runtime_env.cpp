@@ -2,24 +2,29 @@
 #include "interpreter.h"
 #include "renumber.h"
 #include "syntax.h"
-#include <algorithm>
-#include <climits>
-#include <filesystem>
-#include <fstream>
-#include <iostream>
-#include <map>
-#include <sstream>
-#include <string>
+
 
 #include "program_structure.h"
 
 extern void handleRENUMBER(int newStart, int delta, int oldStart);
 extern void executeOPEN(const std::string &line);
-extern void runInterpreter(PROGRAM_STRUCTURE program);
+extern void runInterpreter(PROGRAM_STRUCTURE &program); 
+extern void BASIC_Program_load(PROGRAM_STRUCTURE &program);
 
 extern PROGRAM_STRUCTURE program;
 // PROGRAM_STRUCTURE program;
-void list(int start = 0, int end = INT_MAX);
+// List lines between start and end
+void list(int start, int end=INT_MAX) {
+  for (std::map<int, std::string>::const_iterator it =
+           program.programSource.begin();
+       it != program.programSource.end(); ++it) {
+    int linenum = it->first;
+    if (linenum >= start && linenum <= end) {
+      std::cout << linenum << " " << it->second << std::endl;
+    }
+  }
+}
+
 
 void interactiveLoop() {
   std::string input;
@@ -39,7 +44,7 @@ void interactiveLoop() {
       std::string filename;
       iss >> filename;
       program.filename = filename;
-      load(program);
+      BASIC_Program_load(program);
     } else if (command == "RENUMBER") {
       int newStart = 10, delta = 10, oldStart = 0;
       char comma;
@@ -92,7 +97,7 @@ void interactiveLoop() {
       if (iss >> filename) {
         program.programSource.clear();
         program.filename = filename;
-        load(program);
+        BASIC_Program_load(program);
       }
       try {
         runInterpreter(program);
@@ -107,22 +112,10 @@ void interactiveLoop() {
   }
 }
 
-// List lines between start and end
-void list(int start, int end) {
-  for (std::map<int, std::string>::const_iterator it =
-           program.programSource.begin();
-       it != program.programSource.end(); ++it) {
-    int linenum = it->first;
-    if (linenum >= start && linenum <= end) {
-      std::cout << linenum << " " << it->second << std::endl;
-    }
-  }
-}
-
 int main(int argc, char *argv[]) {
   if (argc > 1) {
     program.filename = argv[1];
-    load(program);
+    BASIC_Program_load(program);
   }
   interactiveLoop();
   return 0;

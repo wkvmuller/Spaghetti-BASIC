@@ -1,5 +1,6 @@
 #include "interpreter.h"
 #include "program_structure.h"
+/*
 #include <cctype>
 #include <cmath>
 #include <cstdlib>
@@ -13,6 +14,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+*/
 
 extern PROGRAM_STRUCTURE program;
 
@@ -26,7 +28,7 @@ extern int currentLine;
 //--------------------------------------------------------------------------------
 //             prototypes
 //
-
+/*
 extern double evalExpression(const std::string &expr);
 void executeCLOSE(const std::string &line);
 void executeFORMAT(const std::string &);
@@ -37,9 +39,29 @@ void executeOPEN(const std::string &line);
 void executePRINT(const std::string &line);
 void executePRINTFILE(const std::string &line);
 void executePRINTFILEUSING(const std::string &line);
-
+extern double evalExpression(const std::string &expr);
+extern std::string trim(const std::string &s);
+*/
 // ========================= Expression Evaluator =========================
 //
+// Must match exactly these signatures:
+
+// Simple file‐PRINT (no USING)
+void executePRINTFILE(const std::string &line) {
+    // parse the “PRINT #chan, …” channel, lookup program.fileHandles[chan],
+    // then delegate to executePRINT(line, *it->second.stream);
+}
+
+// File‐PRINT USING
+void executePRINTFILEUSING(const std::string &line) {
+    // parse “PRINT #chan, USING”, lookup channel,
+    // then delegate to executePRINTUSING(line, *it->second.stream);
+}
+
+// You should already have this in InputOutput.cpp:
+void executePRINTUSING(const std::string &line, std::ostream &out) {
+    // your PRINT USING implementation
+}
 
 //
 //=========================================================================
@@ -94,70 +116,9 @@ void executeCLOSE(const std::string &line) {
   program.fileHandles.erase(it);
 }
 
-void executeFORMAT(const std::string &) {
-  std::cout << "Stub of FORMAT" << std::endl;
-}
-
-void executePRINTexpr(const std::string &line) {
-  // Skip past the “PRINT” keyword
-  std::istringstream iss(line);
-  std::string kw;
-  iss >> kw; // eats "PRINT"
-
-  // Peek at the next non-whitespace character
-  char c = iss.peek();
-  if (c == '#') {
-    // It’s the file-output form.  Pass the full line through.
-    // executePRINTFILEUSING could be chosen here if you detect “USING” later.
-    executePRINTFILE(line);
-  } else {
-    iss >> kw;
-    if (kw == "USING") {
-      executePRINTFILEUSING(line);
-    } else {
-      // Normal console PRINT
-      executePRINT(line);
-    }
-  }
-}
-
-// Forward decls (you should have these elsewhere or adapt)
-double evalExpression(const std::string &expr);
-static std::string trim(const std::string &s);
-
-// PRINT handler
-void executePRINT(const std::string &line) {
-  // Match everything after PRINT
-  static const std::regex rgx(R"(^\s*PRINT\s+(.*)$)", std::regex::icase);
-  std::smatch m;
-  if (!std::regex_match(line, m, rgx)) {
-    throw std::runtime_error("SYNTAX ERROR: Invalid PRINT: " + line);
-  }
-
-  std::string list = m[1].str();
-  std::stringstream ss(list);
-  std::string item;
-  bool first = true;
-
-  while (std::getline(ss, item, ',')) {
-    item = trim(item);
-    if (!first) {
-      std::cout << ' ';
-    }
-    first = false;
-
-    // String literal?
-    if (item.size() >= 2 && item.front() == '"' && item.back() == '"') {
-      std::cout << item.substr(1, item.size() - 2);
-    } else {
-      // Numeric expression
-      double val = evalExpression(item);
-      // You can control formatting here (fixed, precision, etc.)
-      std::cout << val;
-    }
-  }
-
-  std::cout << std::endl;
+void executeFORMAT(const std::string &line) {
+  std::string ss = "Stub of FORMAT ";
+  throw std::runtime_error(ss + line);
 }
 
 // Helper to find a line in programSource or throw
@@ -169,78 +130,70 @@ static std::map<int, std::string>::const_iterator findLine(int ln) {
   return it;
 }
 
-// Helper to trim whitespace
-static std::string trim(const std::string &s) {
-  const char *WS = " \t\r\n";
-  size_t b = s.find_first_not_of(WS);
-  if (b == std::string::npos)
-    return "";
-  size_t e = s.find_last_not_of(WS);
-  return s.substr(b, e - b + 1);
-}
-
-// Common routine to read variables from an input stream
-static void processInputList(const std::string &varList, std::istream &in) {
-  std::stringstream ss(varList);
-  std::string var;
-  while (std::getline(ss, var, ',')) {
-    var = trim(var);
-    if (var.empty())
-      continue;
-    bool isString = (var.back() == '$');
-    std::string name = isString ? var.substr(0, var.size() - 1) : var;
-    VarInfo v;
-    v.isArray = false;
-    if (isString) {
-      v.isString = true;
-      if (!std::getline(in, v.stringValue))
-        throw std::runtime_error("RUNTIME ERROR: Failed to read string for " +
-                                 name);
-      program.stringVariables[name] = v;
-    } else {
-      v.isString = false;
-      double num;
-      if (!(in >> num))
-        throw std::runtime_error("RUNTIME ERROR: Failed to read number for " +
-                                 name);
-      v.numericValue = num;
-      program.numericVariables[name] = v;
+// Shared helper for INPUT: read variables from an istream
+static void processInputList(const std::string &vars, std::istream &in) {
+    std::stringstream ss(vars);
+    std::string v;
+    while (std::getline(ss, v, ',')) {
+        v = trim(v);
+        if (v.empty()) continue;
+        bool isString = (!v.empty() && v.back() == '$');
+        std::string name = isString ? v.substr(0, v.size()-1) : v;
+        VarInfo info;
+        info.isArray = false;
+        if (isString) {
+            info.isString = true;
+            if (!std::getline(in, info.stringValue))
+                throw std::runtime_error("RUNTIME ERROR: Failed to read string for " + name);
+            program.stringVariables[name] = info;
+        } else {
+            double d;
+            if (!(in >> d))
+                throw std::runtime_error("RUNTIME ERROR: Failed to read number for " + name);
+            info.numericValue = d;
+            info.isString = false;
+            program.numericVariables[name] = info;
+        }
     }
-  }
 }
 
-// Dispatcher for INPUT operations: handles three forms:
-// 1) INPUT "prompt", var1,var2$,...
-// 2) INPUT #chan, var1,var2$,...
-// 3) INPUT var1,var2$,...
+// Dispatcher for INPUT statements:
+// 1) INPUT "prompt", varlist
+// 2) INPUT #chan, varlist
+// 3) INPUT varlist
 void executeINPUTops(const std::string &line) {
-  static const std::regex promptRe(
-      R"(^\s*INPUT\s+"([^"]*)"s *,s * (.+) $)", std::regex::icase);
-      static const std::regex fileRe(R"(^\s*INPUT\s*#\s*(\d+)\s*,\s*(.+)$)", std::regex::icase);
-  static const std::regex varRe(R"(^\s*INPUT\s+(.+)$)", std::regex::icase);
+    static const std::regex promptRe(
+        R"(^\\s*INPUT\\s+\"([^\"]*)\"\\s*,\\s*(.+)$)",
+        std::regex::icase
+    );
+    static const std::regex fileReInput(
+        R"(^\\s*INPUT\\s*#\\s*(\\d+)\\s*,\\s*(.+)$)",
+        std::regex::icase
+    );
+    static const std::regex varRe(
+        R"(^\\s*INPUT\\s+(.+)$)",
+        std::regex::icase
+    );
 
-  std::smatch m;
-  if (std::regex_match(line, m, promptRe)) {
-    // Case 1: prompt then variables
-    std::cout << m[1].str();
-    processInputList(m[2].str(), std::cin);
-  } else if (std::regex_match(line, m, fileRe)) {
-    // Case 2: file-based input
-    int chan = std::stoi(m[1].str());
-    auto it = program.fileHandles.find(chan);
-    if (it == program.fileHandles.end() || !it->second.stream ||
-        !it->second.stream->is_open())
-      throw std::runtime_error("RUNTIME ERROR: File channel " +
-                               std::to_string(chan) + " not open");
-    processInputList(m[2].str(), *it->second.stream);
-  } else if (std::regex_match(line, m, varRe)) {
-    // Case 3: console input without prompt
-    processInputList(m[1].str(), std::cin);
-  } else {
-    throw std::runtime_error("SYNTAX ERROR: Invalid INPUT statement: " + line);
-  }
+    std::smatch m;
+    if (std::regex_match(line, m, promptRe)) {
+        std::cout << m[1].str();
+        processInputList(m[2].str(), std::cin);
+    }
+    else if (std::regex_match(line, m, fileReInput)) {
+        int chan = std::stoi(m[1].str());
+        auto it = program.fileHandles.find(chan);
+        if (it == program.fileHandles.end() || !it->second.stream || !it->second.stream->is_open())
+            throw std::runtime_error("RUNTIME ERROR: File channel " + std::to_string(chan) + " not open");
+        processInputList(m[2].str(), *it->second.stream);
+    }
+    else if (std::regex_match(line, m, varRe)) {
+        processInputList(m[1].str(), std::cin);
+    }
+    else {
+        throw std::runtime_error("SYNTAX ERROR: Invalid INPUT statement: " + line);
+    }
 }
-
 /**
  * Plain PRINT:
  *   PRINT <item1>,<item2$>,...
@@ -286,148 +239,43 @@ void executePRINT(const std::string &line, std::ostream &out) {
   out << std::endl;
 }
 
+// Dispatcher for PRINT statements:
 // 1) PRINT items to console
 // 2) PRINT USING format to console
 // 3) PRINT #chan, items to file
-void executePRINTops(const std::string &line) {
-  static const std::regex fileRe(R"(^\s*PRINT\s*#\s*(\d+)\s*,)",
-                                 std::regex::icase);
-  static const std::regex usingRe(R"(^\s*PRINT\s+USING\b)", std::regex::icase);
-  static const std::regex printRe(R"(^\s*PRINT\b)", std::regex::icase);
-
-  std::smatch m;
-  if (std::regex_search(line, m, fileRe)) {
-    int chan = std::stoi(m[1].str());
-    auto it = program.fileHandles.find(chan);
-    if (it == program.fileHandles.end() || !it->second.stream ||
-        !it->second.stream->is_open())
-      throw std::runtime_error("RUNTIME ERROR: File channel " +
-                               std::to_string(chan) + " not open");
-    executePRINT(line, *it->second.stream);
-  } else if (std::regex_search(line, usingRe)) {
-    executePRINTUSING(line, std::cout);
-  } else if (std::regex_search(line, printRe)) {
-    executePRINT(line, std::cout);
-  } else {
-    throw std::runtime_error("SYNTAX ERROR: Invalid PRINT statement: " + line);
-  }
-}
-
-void executeINPUTops(const std::string &line) {
-    static const std::regex promptRe(
-        R"(^\s*INPUT\s+"([^"]*)"\s*,\s*(.+)$)", std::regex::icase);
-    static const std::regex fileRe(R"(^\s*INPUT\s*#\s*(\d+)\s*,\s*(.+)$)", std::regex::icase);
-    static const std::regex varRe(R"(^\s*INPUT\s+(.+)$)", std::regex::icase);
+void executePRINTexpr(const std::string &line) {
+ static const std::regex fileRePrint(
+        R"PRINTF(^\s*PRINT\s*#\s*(\d+)\s*,)PRINTF",
+        std::regex::icase
+    );
+    static const std::regex usingRe(
+        R"USING(^\s*PRINT\s+USING\b)USING",
+        std::regex::icase
+    );
+    static const std::regex printRe(
+        R"PRINT(^\s*PRINT\b)PRINT",
+        std::regex::icase
+    );
     std::smatch m;
-    if (std::regex_match(line, m, promptRe)) {
-      std::cout << m[1].str();
-      processInputList(m[2].str(), std::cin);
+    if (std::regex_search(line, m, fileRePrint)) {
+        int chan = std::stoi(m[1].str());
+        auto it = program.fileHandles.find(chan);
+        if (it == program.fileHandles.end() || !it->second.stream || !it->second.stream->is_open())
+            throw std::runtime_error("RUNTIME ERROR: File channel " + std::to_string(chan) + " not open");
+        executePRINT(line, *it->second.stream);
+    }
+    else if (std::regex_search(line, usingRe)) {
+        executePRINTUSING(line, std::cout);
+    }
+    else if (std::regex_search(line, printRe)) {
+        executePRINT(line, std::cout);
+    }
+    else {
+        throw std::runtime_error("SYNTAX ERROR: Invalid PRINT statement: " + line);
     }
 
-    else if (std::regex_match(line, m, fileRe)) {
-      int chan = std::stoi(m[1].str());
-      auto it = program.fileHandles.find(chan);
-      if (it == program.fileHandles.end() || !it->second.stream ||
-          !it->second.stream->is_open())
-        throw std::runtime_error("RUNTIME ERROR: File channel " +
-                                 std::to_string(chan) + " not open");
-      processInputList(m[2].str(), *it->second.stream);
-    } else if (std::regex_match(line, m, varRe)) {
-      processInputList(m[1].str(), std::cin);
-    } else {
-      throw std::runtime_error("SYNTAX ERROR: Invalid INPUT statement: " +
-                               line);
-    }
-}
-if (args.empty())
-  throw std::runtime_error("RUNTIME ERROR: No arguments for PRINT USING");
+ // if (args.empty())
+ //    throw std::runtime_error("RUNTIME ERROR: No arguments for PRINT USING");
 
-// Walk spec, one run per arg
-size_t argIdx = 0;
-for (size_t i = 0; i < spec.size();) {
-  char ch = spec[i];
-  if (ch == '#' || ch == 'l' || ch == 'L' || ch == 'c' || ch == 'C' ||
-      ch == 'r' || ch == 'R') {
-    char type = std::toupper(ch);
-    size_t start = i;
-    while (i < spec.size() && std::toupper(spec[i]) == type)
-      ++i;
-    int width = int(i - start);
-
-    if (argIdx >= args.size())
-      throw std::runtime_error(
-          "RUNTIME ERROR: Not enough arguments for PRINT USING");
-
-    const std::string &expr = args[argIdx++];
-    if (type == '#') {
-      // numeric field: count decimals
-      std::string fld = spec.substr(start, width);
-      int prec = 0;
-      auto dp = fld.find('.');
-      if (dp != std::string::npos)
-        prec = int(fld.size() - dp - 1);
-      double num = evalExpression(expr);
-      std::ostringstream oss;
-      if (prec > 0)
-        oss << std::fixed << std::setprecision(prec);
-      oss << num;
-      std::string outVal = oss.str();
-      // right-justify
-      if ((int)outVal.size() < width)
-        out << std::string(width - outVal.size(), ' ');
-      out << outVal;
-    } else {
-      // string field
-      std::string s = evalStringExpression(expr);
-      if ((int)s.size() > width)
-        s = s.substr(0, width);
-      int pad = width - int(s.size());
-      if (type == 'L')
-        out << s << std::string(pad, ' ');
-      else if (type == 'R')
-        out << std::string(pad, ' ') << s;
-      else { // center
-        int left = pad / 2, right = pad - left;
-        out << std::string(left, ' ') << s << std::string(right, ' ');
-      }
-    }
-  } else {
-    // literal char
-    out << ch;
-    ++i;
-  }
 }
-out << std::endl;
-}
-R"(^\s*INPUT\s+"([^"]*)"\s*,\s*(.+)$)",
-// executePRINTexprconst std::string &line){
-void executeINPUTops(const std::string &line) {
-  static const std::regex promptRe(
-      R"(^\s*INPUT\s+"([^"]*)"\s *,\s * (.+) $) ", std::regex::icase);
-      static const std::regex fileRe(R"(^\s*INPUT\s*#\s*(\d+)\s*,\s*(.+)$)",
-                                     std::regex::icase);
-  static const std::regex varRe(R"(^\s*INPUT\s+(.+)$)", std::regex::icase);
 
-  std::smatch m;
-  // 3) File-based simple PRINT
-  if (std::regex_search(line, m, fileRe)) {
-    int chan = std::stoi(m[1].str());
-    auto it = program.fileHandles.find(chan);
-    if (it == program.fileHandles.end() || !it->second.stream ||
-        !it->second.stream->is_open())
-      throw std::runtime_error("RUNTIME ERROR: File channel " +
-                               std::to_string(chan) + " not open");
-    // Delegate to generic PRINT→ostream
-    executePRINT(line, *it->second.stream);
-  }
-  // 2) Console PRINT USING
-  else if (std::regex_search(line, usingRe)) {
-    executePRINTUSING(line, std::cout);
-  }
-  // 1) Plain console PRINT
-  else if (std::regex_search(line, printRe)) {
-    executePRINT(line, std::cout);
-  } else {
-    throw std::runtime_error("SYNTAX ERROR: Invalid PRINT statement: " + line);
-  }
-}

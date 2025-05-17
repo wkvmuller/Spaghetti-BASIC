@@ -1,5 +1,6 @@
 #include "interpreter.h"
 #include "program_structure.h"
+/*
 #include <cctype>
 #include <cmath>
 #include <cstdlib>
@@ -16,6 +17,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <iomanip>
+*/
 
 extern PROGRAM_STRUCTURE program;
 
@@ -27,9 +29,6 @@ std::map<std::string, VarInfo> variables;
 //--------------------------------------------------------------------------------
 //             prototypes
 //
-extern std::string evalStringExpression(const std::string &expr);
-double evalExpression(const std::string &expr);
-static std::string trim(const std::string &s);
 
 void evaluateMATExpression(const std::string &target,
                            const std::string &expression);
@@ -42,7 +41,6 @@ void executeFORMAT(const std::string &);
 void executeGO(const std::string &line);
 void executeGOSUB(const std::string &line);
 void executeIF(const std::string &);
-extern void executeINPUTops(const std::string &line);
 void executeLET(const std::string &line);
 void executeMAT(const std::string &line);
 void executeMATPRINT(const std::string &line);
@@ -58,20 +56,20 @@ void executeSTOP(const std::string &);
 void executeUNTIL(const std::string &line);
 void executeWEND(const std::string &);
 void executeWHILE(const std::string &line);
+extern void executeFORMAT(const std::string &line);
+extern void executePRINTFILE(const std::string &line);
+extern void executeINPUTops(const std::string &line);
+extern void executeOPEN(const std::string &line);
+extern void executeCLOSE(const std::string &line);
+extern double evaluateFunction(const std::string &name, const std::vector<ArgsInfo> &args);
+extern std::string evaluateStringFunction(const std::string &name, const std::vector<ArgsInfo> &args);
+extern void executeINPUT(const std::string &line);
+extern void executeINPUTFILE(const std::string &line);
+extern void executePRINTexpr(const std::string &line);
+extern void executePRINTFILEUSING(const std::string &line);
+//extern ArgsInfo makeArgsInfo(long long line, std::string idname, bool boolstring = false, std::string str = "", double d = 0.0);
 
-//=======================================================================================
-//   inline functsupport
-//
 
-extern double evaluateFunction(const std::string &name,
-                                  const std::vector<ArgsInfo> &args);
-                                  
-
-extern std::string evaluateStringFunction(const std::string &name,
-                                        const std::vector<ArgsInfo> &args);
-
-// ========================= Expression Evaluator =========================
-//
 
 //
 //=========================================================================
@@ -80,10 +78,6 @@ extern std::string evaluateStringFunction(const std::string &name,
 
 // extern PROGRAM_STRUCTURE program;
 // OPEN statement: OPEN "filename" FOR INPUT|OUTPUT|APPEND AS #<channel>
-extern void executeOPEN(const std::string &line);
-
-// statement: CLOSE #<channel>
-extern void executeCLOSE(const std::string &line);
 
 // —————————————————————————————————————————————————————————
 // DATA statement: parses DATA <datum>{,<datum>}
@@ -159,9 +153,6 @@ void executeREAD(const std::string &line) {
 // RESTORE statement: resets DATA pointer
 // —————————————————————————————————————————————————————————
 void executeRESTORE(const std::string & /*line*/) { program.dataPointer = 0; }
-
-void evaluateMATExpression(const std::string &target,
-                           const std::string &expression);
 
 // BEEP statement — emit a bell character
 void executeBEEP(const std::string & /*line*/) {
@@ -372,9 +363,6 @@ void executeFOR(const std::string &line) {
 
 void executeIF(const std::string &) { std::cout << "Stub of IF" << std::endl; }
 
-extern void executeINPUT(const std::string &line);
-extern void executeINPUTFILE(const std::string &line);
-
 // LET statement: LET <var> = <expr>
 void executeLET(const std::string &line) {
     static const std::regex rgx(
@@ -430,37 +418,11 @@ static const std::regex rgx(
     std::regex::icase
 );
 
-extern void executeFORMAT(const std::string &line);
-
-// Forward decls (you should have these elsewhere or adapt)
-double evalExpression(const std::string &expr);
-
-
-// NEW: pass in the output stream; defaults to std::cout
-//extern void executePRINT(const std::string &line, std::ostream &out = std::cout);
-
-
-// Example trim helper
-static std::string trim(const std::string &s) {
-  const char *WS = " \t\r\n";
-  size_t start = s.find_first_not_of(WS);
-  if (start == std::string::npos)
-    return "";
-  size_t end = s.find_last_not_of(WS);
-  return s.substr(start, end - start + 1);
-}
-
-// PRINT to file handler
-extern void executePRINTFILE(const std::string &line);
 
 
 // PRINT USING handler
 // Syntax: PRINT USING <formatLine> <var1>,<var2$>,...
 // Optional output stream overload
-extern void executePRINTexpr(const std::string &line);
-
-extern void executePRINTFILEUSING(const std::string &line);
-
 // Helper to find a line in programSource or throw
 static std::map<int, std::string>::const_iterator findLine(int ln) {
   auto it = program.programSource.find(ln);
@@ -765,7 +727,7 @@ void runInterpreter(PROGRAM_STRUCTURE &program) {
       StatementType stmt = identifyStatement(keyword);
       switch (stmt) {
       case ST_PRINTFILEUSING:
-        executePRINTFILEUSING(code);
+        executePRINTexpr(code);
       case ST_LET:
         executeLET(code);
         break;
@@ -835,14 +797,15 @@ void runInterpreter(PROGRAM_STRUCTURE &program) {
       case ST_CLOSE:
         executeCLOSE(code);
         break;
-        /*
-                case ST_PRINTFILE:
+ /*
+                 case ST_PRINTFILE:
                 executePRINTexpr(code);
                 break;
+                * 
       case ST_INPUTFILE:
-        executeINPUTFILE(code);
+        executeINPUTops(code);
         break;
-         */
+*/
      case ST_WHILE:
         executeWHILE(code);
         break;
@@ -862,7 +825,7 @@ void runInterpreter(PROGRAM_STRUCTURE &program) {
         executeMATREAD(code);
         break;
       default:
-        std::cout << "Unhandled statement: " << code << std::endl;
+        std::runtime_error("Unhandled statement: " + code);
       }
     }
   }

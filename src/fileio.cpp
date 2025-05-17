@@ -1,4 +1,4 @@
-
+/*
 #include <limits.h>
 #include <unistd.h>
 
@@ -6,11 +6,12 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+*/
 
 #include "program_structure.h"
 
 // Load program from program.filename
-void load(PROGRAM_STRUCTURE &program) {
+void BASIC_Program_load(PROGRAM_STRUCTURE &program) {
   const std::string &filename = program.filename;
   std::ifstream infile(filename);
   if (!infile) {
@@ -54,7 +55,7 @@ void load(PROGRAM_STRUCTURE &program) {
 }
 
 // Save program to program.filename
-void save(PROGRAM_STRUCTURE &program) {
+void BASIC_Program_save(PROGRAM_STRUCTURE &program) {
   const std::string &filename = program.filename;
   if (filename.empty()) {
     std::cerr << "ERROR: No filename specified in PROGRAM_STRUCTURE."
