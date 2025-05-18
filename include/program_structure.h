@@ -1,6 +1,10 @@
 #ifndef PROGRAM_STRUCTURE_H
 #define PROGRAM_STRUCTURE_H
 
+#include <regex>
+#include <stdexcept>
+#include <string>
+#include <vector>
 #include <cmath>
 #include <cstddef>
 #include <ctime>
@@ -74,7 +78,10 @@
 #include <iomanip>
 #include <sstream>
 #include <climits>
-
+#include <cstdlib> // for atoi
+#include <iterator>
+#include <regex>
+#include <sstream>
 
 
 const size_t DENSE_MATRIX_THRESHOLD = 10000;
@@ -189,6 +196,9 @@ struct PROGRAM_STRUCTURE {
   std::map<int, FileHandle> fileHandles;
 
   std::vector<ForInfo> forStack;
+  
+  std::vector<int> repeatStack;
+
 };
 
 extern PROGRAM_STRUCTURE program;

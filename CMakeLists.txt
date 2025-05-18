@@ -21,6 +21,7 @@ set(SOURCES
     src/program_structure.cpp
     src/InputOutput.cpp
     src/inlinefunctsupport.cpp
+    src/matrixops.cpp
 )
 
 # Define the executable

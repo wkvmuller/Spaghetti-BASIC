@@ -56,7 +56,7 @@ struct IdentifierReturn {
 void evaluateMATExpression(const std::string &target,
                            const std::string &expression);
                            
-void executeBEEP(const std::string &);
+/*void executeBEEP(const std::string &);
 void executeCLOSE(const std::string &line);
 void executeDEF(const std::string &);
 void executeDIM(const std::string &line);
@@ -85,6 +85,7 @@ void executeWHILE(const std::string &line);
 void executePRINTFILE(const std::string &line);
 void executePRINTUSING(const std::string &line, std::ostream &out = std::cout);
 void executePRINTFILEUSING(const std::string &line);
+*/
 
 //=========================================================
 #endif // INTERPRETER_H

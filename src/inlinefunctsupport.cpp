@@ -1,6 +1,5 @@
 #include "program_structure.h"
 
-
 //=======================================================================================
 //   inline functsupport
 //
@@ -103,7 +102,7 @@ double evaluateFunction(const std::string &name,
     return args[0].d * PI / 180.0;
   }
   if (name == "RAD2DEG") {
-    return args[0].d * 180.0 / PI ;
+    return args[0].d * 180.0 / PI;
   }
   if (name == "DET") {
     std::stringstream ss;

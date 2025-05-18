@@ -2,11 +2,6 @@
 #define RENUMBER_H
 
 #include "program_structure.h"
-#include <iostream>
-#include <map>
-#include <regex>
-#include <sstream>
-#include <string>
 
 // Renumber BASIC program lines and update line references
 // newStart: starting line number for renumbering

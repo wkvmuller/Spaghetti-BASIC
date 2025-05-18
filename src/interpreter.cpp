@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <map>
 #include <regex>
@@ -12,11 +13,6 @@
 #include <stack>
 #include <stdexcept>
 #include <string>
-#include <regex>
-#include <sstream>
-#include <iostream>
-#include <stdexcept>
-#include <iomanip>
 */
 
 extern PROGRAM_STRUCTURE program;
@@ -29,48 +25,54 @@ std::map<std::string, VarInfo> variables;
 //--------------------------------------------------------------------------------
 //             prototypes
 //
-
-void evaluateMATExpression(const std::string &target,
-                           const std::string &expression);
-void executeBEEP(const std::string &);
-void executeCLOSE(const std::string &line);
-void executeDEF(const std::string &);
-void executeDIM(const std::string &line);
-void executeFOR(const std::string &line);
-void executeFORMAT(const std::string &);
-void executeGO(const std::string &line);
+//
+// void evaluateMATExpression(const std::string &target,
+//                           const std::string &expression);
+// void executeBEEP(const std::string &);
+// void executeCLOSE(const std::string &line);
+// void executeDEF(const std::string &);
+// void executeDIM(const std::string &line);
+// void executeFOR(const std::string &line);
+// void executeFORMAT(const std::string &);
+// void executeGO(const std::string &line);
+void executeGOTO(const std::string &line);
 void executeGOSUB(const std::string &line);
-void executeIF(const std::string &);
+// void executeIF(const std::string &);
 void executeLET(const std::string &line);
-void executeMAT(const std::string &line);
-void executeMATPRINT(const std::string &line);
-void executeMATPRINTFILE(const std::string &line);
-void executeMATREAD(const std::string &line);
-void executeON(const std::string &line);
-void executeOPEN(const std::string &line);
-void executeREM(const std::string &);
-void executeREPEAT(const std::string &);
-void executeRETURN(const std::string &);
+void executeMATops(const std::string &line);
+// void executeMATPRINT(const std::string &line);
+// void executeMATPRINTFILE(const std::string &line);
+// void executeMATREAD(const std::string &line);
+// void executeON(const std::string &line);
+// void executeOPEN(const std::string &line);
+// void executeREM(const std::string &);
+// void executeREPEAT(const std::string &);
+// void executeRETURN(const std::string &);
 void executeSEED(const std::string &line);
 void executeSTOP(const std::string &);
-void executeUNTIL(const std::string &line);
-void executeWEND(const std::string &);
-void executeWHILE(const std::string &line);
+// void executeUNTIL(const std::string &line);
+// void executeWEND(const std::string &);
+// void executeWHILE(const std::string &line);
+
 extern void executeFORMAT(const std::string &line);
 extern void executePRINTFILE(const std::string &line);
 extern void executeINPUTops(const std::string &line);
 extern void executeOPEN(const std::string &line);
 extern void executeCLOSE(const std::string &line);
-extern double evaluateFunction(const std::string &name, const std::vector<ArgsInfo> &args);
-extern std::string evaluateStringFunction(const std::string &name, const std::vector<ArgsInfo> &args);
+extern double evaluateFunction(const std::string &name,
+                               const std::vector<ArgsInfo> &args);
+extern std::string evaluateStringFunction(const std::string &name,
+                                          const std::vector<ArgsInfo> &args);
 extern void executeINPUT(const std::string &line);
 extern void executeINPUTFILE(const std::string &line);
 extern void executePRINTexpr(const std::string &line);
 extern void executePRINTFILEUSING(const std::string &line);
-//extern ArgsInfo makeArgsInfo(long long line, std::string idname, bool boolstring = false, std::string str = "", double d = 0.0);
-
-
-
+// extern ArgsInfo makeArgsInfo(long long line, std::string idname, bool
+// boolstring = false, std::string str = "", double d = 0.0);
+extern void executeMATPRINT(const std::string &line,
+                            std::ostream &out = std::cout);
+extern void executeMATPRINTFILE(const std::string &line);
+extern void executeMAT(const std::string &line);
 //
 //=========================================================================
 //  Statments support.
@@ -161,21 +163,20 @@ void executeBEEP(const std::string & /*line*/) {
 
 // DEF FN<name>(<param>) = <expression>
 void executeDEF(const std::string &line) {
-    static const std::regex rgx(
-        R"(^\s*DEF\s+FN([A-Z][A-Z0-9_]{0,31})\s*\(\s*([A-Z][A-Z0-9_]{0,31})\s*\)\s*=\s*(.+)$)",
-        std::regex::icase
-    );
-    std::smatch m;
-    if (!std::regex_match(line, m, rgx)) {
-        throw std::runtime_error("SYNTAX ERROR: Invalid DEF: " + line);
-    }
+  static const std::regex rgx(
+      R"(^\s*DEF\s+FN([A-Z][A-Z0-9_]{0,31})\s*\(\s*([A-Z][A-Z0-9_]{0,31})\s*\)\s*=\s*(.+)$)",
+      std::regex::icase);
+  std::smatch m;
+  if (!std::regex_match(line, m, rgx)) {
+    throw std::runtime_error("SYNTAX ERROR: Invalid DEF: " + line);
+  }
 
-    std::string name  = m[1].str();  // function name
-    std::string param = m[2].str();  // single parameter
-    std::string expr  = m[3].str();  // body expression
+  std::string name = m[1].str();  // function name
+  std::string param = m[2].str(); // single parameter
+  std::string expr = m[3].str();  // body expression
 
-    // Store or overwrite
-    program.userFunctions[name] = UserFunction{param, expr};
+  // Store or overwrite
+  program.userFunctions[name] = UserFunction{param, expr};
 }
 
 void executeEND(const std::string &line) {
@@ -334,91 +335,267 @@ void executeDIM(const std::string &line) {
 
 // FOR handler: FOR <var> = <start> TO <end> [STEP <step>]
 void executeFOR(const std::string &line) {
-    static const std::regex rgx(
-        R"(\\s*FOR\\s+([A-Z][A-Z0-9_]{0,31})\\s*=\\s*(.+?)\\s+TO\\s+(.+?)(?:\\s+STEP\\s+(.+))?\\s*$)",
-        std::regex::icase
-    );
-    std::smatch m;
-    if (!std::regex_match(line, m, rgx)) {
-        throw std::runtime_error("SYNTAX ERROR: Invalid FOR: " + line);
-    }
-    std::string var = m[1].str();
-    double start = evalExpression(m[2].str());
-    double end   = evalExpression(m[3].str());
-    double step  = m[4].matched ? evalExpression(m[4].str()) : 1.0;
+  static const std::regex rgx(
+      R"(\\s*FOR\\s+([A-Z][A-Z0-9_]{0,31})\\s*=\\s*(.+?)\\s+TO\\s+(.+?)(?:\\s+STEP\\s+(.+))?\\s*$)",
+      std::regex::icase);
+  std::smatch m;
+  if (!std::regex_match(line, m, rgx)) {
+    throw std::runtime_error("SYNTAX ERROR: Invalid FOR: " + line);
+  }
+  std::string var = m[1].str();
+  double start = evalExpression(m[2].str());
+  double end = evalExpression(m[3].str());
+  double step = m[4].matched ? evalExpression(m[4].str()) : 1.0;
 
-    if (program.forStack.size() >= 15) {
-        throw std::runtime_error("RUNTIME ERROR: FOR nesting exceeds 15 levels");
-    }
+  if (program.forStack.size() >= 15) {
+    throw std::runtime_error("RUNTIME ERROR: FOR nesting exceeds 15 levels");
+  }
 
-    // Initialize loop variable
-    VarInfo &v = program.numericVariables[var];
-    v.numericValue = start;
-    v.isString = false;
+  // Initialize loop variable
+  VarInfo &v = program.numericVariables[var];
+  v.numericValue = start;
+  v.isString = false;
 
-    // Push loop info
-    ForInfo fi{var, end, step, program.currentLine};
-    program.forStack.push_back(fi);
+  // Push loop info
+  ForInfo fi{var, end, step, program.currentLine};
+  program.forStack.push_back(fi);
 }
 
-void executeIF(const std::string &) { std::cout << "Stub of IF" << std::endl; }
+/**
+ * dispatchStatement
+ *
+ * Given a single BASIC statement (without its line number),
+ * invoke the appropriate executeXXX handler.
+ */
+void dispatchStatement(const std::string &stmt) {
+  // Extract the first word (keyword)
+  std::istringstream iss(stmt);
+  std::string kw;
+  iss >> kw;
+  // Uppercase it
+  std::transform(kw.begin(), kw.end(), kw.begin(),
+                 [](unsigned char c) { return std::toupper(c); });
+
+  if (kw == "LET") {
+    executeLET(stmt);
+  }
+  //   else if (kw == "DEF") {
+  //        executeDEF(stmt);
+  //    }
+  //    else if (kw == "DIM") {
+  //        executeDIM(stmt);
+  //   }
+  //    else if (kw == "DATA") {
+  //        executeDATA(stmt);
+  //    }
+  else if (kw == "READ") {
+    executeREAD(stmt);
+  } else if (kw == "RESTORE") {
+    executeRESTORE(stmt);
+  } else if (kw == "PRINT") {
+    executePRINTexpr(stmt);
+  } else if (kw == "INPUT") {
+    executeINPUTops(stmt);
+  } else if (kw == "GOTO") {
+    executeGOTO(stmt);
+  } else if (kw == "GOSUB") {
+    executeGOSUB(stmt);
+  }
+  //    else if (kw == "RETURN") {
+  //        executeRETURN(stmt);
+  //    }
+  //    else if (kw == "ON") {
+  //        executeON(stmt);
+  //    }
+  //    else if (kw == "IF") {
+  //        executeIF(stmt);
+  //    }
+  //    else if (kw == "FOR") {
+  //        executeFOR(stmt);
+  //    }
+  //    else if (kw == "NEXT") {
+  //        executeNEXT(stmt);
+  //    }
+  //    else if (kw == "WHILE") {
+  //        executeWHILE(stmt);
+  //    }
+  //    else if (kw == "WEND") {
+  //        executeWEND(stmt);
+  //    }
+  //    else if (kw == "REPEAT") {
+  //       executeREPEAT(stmt);
+  //    }
+  //    else if (kw == "UNTIL") {
+  //        executeUNTIL(stmt);
+  //    }
+  else if (kw == "MAT") {
+    executeMATops(stmt);
+  } else if (kw == "SEED") {
+    executeSEED(stmt);
+  } else if (kw == "STOP") {
+    executeSTOP(stmt);
+  } else if (kw == "END") {
+    executeEND(stmt);
+  }
+  //    else if (kw == "FORMAT") {
+  //        executeFORMAT(stmt);
+  //    }
+  else {
+    throw std::runtime_error("SYNTAX ERROR: Unknown statement: " + kw + ":" +
+                             stmt);
+  }
+}
+
+/**
+ * IF handler: single‐line IF…THEN
+ *
+ * Syntax: IF <expression> THEN <statement>
+ * Evaluates the expression; if non-zero, executes the trailing statement.
+ */
+void executeIF(const std::string &line) {
+  static const std::regex rgx(R"(^\s*IF\s+(.+?)\s+THEN\s+(.+)$)",
+                              std::regex::icase);
+  std::smatch m;
+  if (!std::regex_match(line, m, rgx)) {
+    throw std::runtime_error("SYNTAX ERROR: Invalid IF syntax: " + line);
+  }
+
+  std::string expr = m[1].str();
+  std::string stmt = m[2].str();
+
+  // Evaluate the condition
+  double cond = evalExpression(expr);
+  if (cond != 0.0) {
+    // Dispatch the embedded statement (e.g. GOTO 100, PRINT "Hi", etc.)
+    dispatchStatement(stmt);
+  }
+}
 
 // LET statement: LET <var> = <expr>
 void executeLET(const std::string &line) {
-    static const std::regex rgx(
-        R"(^\s*LET\s+([A-Z][A-Z0-9_]{0,31}\$?)\s*=\s*(.+)$)",
-        std::regex::icase
-    );
-    std::smatch m;
-    if (!std::regex_match(line, m, rgx)) {
-        throw std::runtime_error("SYNTAX ERROR: Invalid LET syntax: " + line);
-    }
+  static const std::regex rgx(
+      R"(^\s*LET\s+([A-Z][A-Z0-9_]{0,31}\$?)\s*=\s*(.+)$)", std::regex::icase);
+  std::smatch m;
+  if (!std::regex_match(line, m, rgx)) {
+    throw std::runtime_error("SYNTAX ERROR: Invalid LET syntax: " + line);
+  }
 
-    std::string varName = m[1].str();
-    bool isString = false;
-    if (!varName.empty() && varName.back() == '$') {
-        isString = true;
-        varName.pop_back();
-    }
+  std::string varName = m[1].str();
+  bool isString = false;
+  if (!varName.empty() && varName.back() == '$') {
+    isString = true;
+    varName.pop_back();
+  }
 
-    std::string expr = m[2].str();
-    if (isString) {
-        // Evaluate as string expression
-        std::string val = evalStringExpression(expr);
-        VarInfo &slot = program.stringVariables[varName];
-        slot.stringValue = val;
-        slot.isString    = true;
-    } else {
-        // Evaluate as numeric expression
-        double val = evalExpression(expr);
-        VarInfo &slot = program.numericVariables[varName];
-        slot.numericValue = val;
-        slot.isString     = false;
-    }
+  std::string expr = m[2].str();
+  if (isString) {
+    // Evaluate as string expression
+    std::string val = evalStringExpression(expr);
+    VarInfo &slot = program.stringVariables[varName];
+    slot.stringValue = val;
+    slot.isString = true;
+  } else {
+    // Evaluate as numeric expression
+    double val = evalExpression(expr);
+    VarInfo &slot = program.numericVariables[varName];
+    slot.numericValue = val;
+    slot.isString = false;
+  }
 }
 
-void executeMAT(const std::string &line) {
-  std::cout << "Stub of MAT" << std::endl;
-}
-void executeMATPRINT(const std::string &line) {
-  std::cout << "Stub of MATPRINT" << std::endl;
-}
-void executeMATPRINTFILE(const std::string &line) {
-  std::cout << "Stub of MATPRINTFILE" << std::endl;
-}
+/**
+ * MAT READ handler.
+ *
+ * Reads values from the DATA pool into a numeric matrix.
+ * Syntax: MAT READ <matrixName>
+ */
 void executeMATREAD(const std::string &line) {
-  std::cout << "Stub of MATREAD" << std::endl;
+  static const std::regex rgx(R"(^\s*MAT\s+READ\s+([A-Z][A-Z0-9_]{0,31})\s*$)",
+                              std::regex::icase);
+  std::smatch m;
+  if (!std::regex_match(line, m, rgx)) {
+    throw std::runtime_error("SYNTAX ERROR: Invalid MAT READ: " + line);
+  }
+
+  std::string name = m[1].str();
+  auto it = program.numericMatrices.find(name);
+  if (it == program.numericMatrices.end()) {
+    throw std::runtime_error("RUNTIME ERROR: Matrix not defined: " + name);
+  }
+  MatrixValue &mv = it->second;
+
+  // Compute total elements = product of dimensions
+  size_t total = 1;
+  for (size_t i = 0; i < mv.dimensions.size(); ++i) {
+    total *= static_cast<size_t>(mv.dimensions[i]);
+  }
+  // Configure dense vs sparse storage
+  mv.configureStorage(total);
+
+  // Fill matrix from DATA values
+  for (size_t idx = 0; idx < total; ++idx) {
+    if (program.dataPointer >= program.dataValues.size()) {
+      throw std::runtime_error(
+          "RUNTIME ERROR: Out of DATA while reading matrix " + name);
+    }
+    const VarInfo &dv = program.dataValues[program.dataPointer++];
+    if (!mv.isSparse) {
+      mv.denseValues[idx] = dv;
+    } else {
+      // Compute multi-dimensional index for sparse storage
+      MatrixIndex mi;
+      mi.dimensions.resize(mv.dimensions.size());
+      size_t tmp = idx;
+      for (int d = static_cast<int>(mv.dimensions.size()) - 1; d >= 0; --d) {
+        size_t dimSize = static_cast<size_t>(mv.dimensions[d]);
+        mi.dimensions[d] = static_cast<int>(tmp % dimSize);
+        tmp /= dimSize;
+      }
+      mv.sparseValues[mi] = dv;
+    }
+  }
+}
+/**
+ * Dispatch all MAT‐related statements:
+ *
+ *   MAT <id> = <matexpr>             → executeMAT
+ *   MAT READ <id>                     → executeMATREAD
+ *   MAT PRINT #<chan>, <id1>,<id2>    → executeMATPRINTFILE
+ *   MAT PRINT <id1>,<id2>,…           → executeMATPRINT
+ */
+void executeMATops(const std::string &line) {
+  static const std::regex assignRe(R"(^\s*MAT\s+([A-Z][A-Z0-9_]*)\s*=\s*(.+)$)",
+                                   std::regex::icase);
+  static const std::regex readRe(R"(^\s*MAT\s+READ\s+([A-Z][A-Z0-9_]*)\s*$)",
+                                 std::regex::icase);
+  static const std::regex printFileRe(
+      R"(^\s*MAT\s+PRINT\s*#\s*(\d+)\s*,\s*(.+)$)", std::regex::icase);
+  static const std::regex printRe(R"(^\s*MAT\s+PRINT\s+(.+)$)",
+                                  std::regex::icase);
+
+  std::smatch m;
+  if (std::regex_match(line, m, assignRe)) {
+    // MAT <id> = <matexpr>
+    executeMAT(line);
+  } else if (std::regex_match(line, m, readRe)) {
+    // MAT READ <id>
+    executeMATREAD(line);
+  } else if (std::regex_match(line, m, printFileRe)) {
+    // MAT PRINT #<chan>, <id list>
+    executeMATPRINTFILE(line);
+  } else if (std::regex_match(line, m, printRe)) {
+    // MAT PRINT <id list>
+    executeMATPRINT(line, std::cout);
+  } else {
+    throw std::runtime_error("SYNTAX ERROR: Invalid MAT statement: " + line);
+  }
 }
 // FORMAT statement: defines a format string for PRINT USING
 // Syntax:  <line> := "format-spec"
 // e.g.    100 := "###,###.###   lllllllllll   cccccc    rrrrrrr"
 // Corrected executeFORMAT regex with proper raw string delimiter
-static const std::regex rgx(
-    R"FMT(^\s*(\d+)\s*:=\s*"([^"]*)"\s*$)FMT",
-    std::regex::icase
-);
-
-
+static const std::regex rgx(R"FMT(^\s*(\d+)\s*:=\s*"([^"]*)"\s*$)FMT",
+                            std::regex::icase);
 
 // PRINT USING handler
 // Syntax: PRINT USING <formatLine> <var1>,<var2$>,...
@@ -535,77 +712,154 @@ void executeON(const std::string &line) {
   }
 }
 
-void executeREM(const std::string &) {}
-
-void executeREPEAT(const std::string &) {
-  std::cout << "Stub of REPEAT" << std::endl;
-}
+void executeREM(const std::string &line) { std::string mivic = line; }
 
 // SEED <unsigned-integer>
 void executeSEED(const std::string &line) {
-    static const std::regex rgx(R"(^\s*SEED\s+(\d+)\s*$)", std::regex::icase);
-    std::smatch m;
-    if (!std::regex_match(line, m, rgx)) {
-        throw std::runtime_error("SYNTAX ERROR: Invalid SEED: " + line);
-    }
-    unsigned int seed = static_cast<unsigned int>(std::stoul(m[1].str()));
-    std::srand(seed);
-    program.seedValue = seed;
+  static const std::regex rgx(R"(^\s*SEED\s+(\d+)\s*$)", std::regex::icase);
+  std::smatch m;
+  if (!std::regex_match(line, m, rgx)) {
+    throw std::runtime_error("SYNTAX ERROR: Invalid SEED: " + line);
+  }
+  unsigned int seed = static_cast<unsigned int>(std::stoul(m[1].str()));
+  std::srand(seed);
+  program.seedValue = seed;
 }
 
 void executeSTOP(const std::string &line) {
   throw std::runtime_error("RUNTIME ERROR: STOP encountered");
 }
 
-void executeUNTIL(const std::string &line) {
-  std::cout << "Stub of UNTIL" << std::endl;
+/**
+ * REPEAT handler.
+ *   REPEAT
+ * Marks the start of a repeat/until loop.
+ */
+void executeREPEAT(const std::string &line) {
+  static const std::regex rgx(R"(^\\s*REPEAT\\s*$)", std::regex::icase);
+  std::smatch m;
+  if (!std::regex_match(line, m, rgx)) {
+    throw std::runtime_error("SYNTAX ERROR: Invalid REPEAT: " + line);
+  }
+  // Push current line number onto stack
+  program.repeatStack.push_back(program.currentLine);
 }
 
-void executeWEND(const std::string &) {
-  std::cout << "Stub of WEND" << std::endl;
+/**
+ * UNTIL handler.
+ *   UNTIL <expression>
+ * Evaluates the expression; if false (zero), loops back to REPEAT.
+ * Otherwise exits the loop.
+ */
+void executeUNTIL(const std::string &line) {
+  static const std::regex rgx(R"(^\\s*UNTIL\\s+(.+)$)", std::regex::icase);
+  std::smatch m;
+  if (!std::regex_match(line, m, rgx)) {
+    throw std::runtime_error("SYNTAX ERROR: Invalid UNTIL: " + line);
+  }
+  if (program.repeatStack.empty()) {
+    throw std::runtime_error("RUNTIME ERROR: UNTIL without REPEAT");
+  }
+  // Get condition expression
+  std::string cond = m[1].str();
+  double value = evalExpression(cond);
+  if (value == 0.0) {
+    // false: go back to REPEAT
+    int startLine = program.repeatStack.back();
+    program.nextLineNumber = startLine;
+    program.nextLineNumberSet = true;
+  } else {
+    // true: exit loop
+    program.repeatStack.pop_back();
+  }
+}
+
+/**
+ * WEND handler
+ *   WEND
+ *
+ * Pops the top WHILE from loopStack, re-evaluates its condition,
+ * and either jumps back to the WHILE line or exits the loop.
+ */
+void executeWEND(const std::string &line) {
+  static const std::regex rgx(R"(^\s*WEND\s*$)", std::regex::icase);
+  std::smatch m;
+  if (!std::regex_match(line, m, rgx)) {
+    throw std::runtime_error("SYNTAX ERROR: Invalid WEND: " + line);
+  }
+  if (program.loopStack.empty()) {
+    throw std::runtime_error("RUNTIME ERROR: WEND without WHILE");
+  }
+  // C++11‐style unpack of the top WHILE
+  auto loopInfo = program.loopStack.back();
+  std::string cond = loopInfo.first;
+  int startLine = loopInfo.second;
+
+  double value = evalExpression(cond);
+  if (value != 0.0) {
+    // repeat
+    program.nextLineNumber = startLine;
+    program.nextLineNumberSet = true;
+  } else {
+    // exit
+    program.loopStack.pop_back();
+  }
 }
 
 void executeWHILE(const std::string &line) {
-  std::cout << "Stub of WHILE" << std::endl;
+  static const std::regex rgx(R"(^\s*WHILE\s+(.+)$)", std::regex::icase);
+  std::smatch m;
+  if (!std::regex_match(line, m, rgx)) {
+    throw std::runtime_error("SYNTAX ERROR: Invalid WHILE: " + line);
+  }
+  std::string cond = m[1].str();
+  double value = evalExpression(cond);
+  if (value != 0.0) {
+    // true: enter loop
+    program.loopStack.push_back({cond, program.currentLine});
+  } else {
+    // false: skip loop body
+    // Interpreter must skip lines until matching WEND
+    // (skipping logic handled elsewhere)
+  }
 }
 
 // NEXT handler: NEXT <var>
 void executeNEXT(const std::string &line) {
-    static const std::regex rgx(
-        R"(\\s*NEXT\\s+([A-Z][A-Z0-9_]{0,31})\\s*$)",
-        std::regex::icase
-    );
-    std::smatch m;
-    if (!std::regex_match(line, m, rgx)) {
-        throw std::runtime_error("SYNTAX ERROR: Invalid NEXT: " + line);
-    }
-    std::string var = m[1].str();
+  static const std::regex rgx(R"(\\s*NEXT\\s+([A-Z][A-Z0-9_]{0,31})\\s*$)",
+                              std::regex::icase);
+  std::smatch m;
+  if (!std::regex_match(line, m, rgx)) {
+    throw std::runtime_error("SYNTAX ERROR: Invalid NEXT: " + line);
+  }
+  std::string var = m[1].str();
 
-    if (program.forStack.empty()) {
-        throw std::runtime_error("RUNTIME ERROR: NEXT without FOR");
-    }
+  if (program.forStack.empty()) {
+    throw std::runtime_error("RUNTIME ERROR: NEXT without FOR");
+  }
 
-    // Check that top of stack matches
-    ForInfo fi = program.forStack.back();
-    if (fi.varName != var) {
-        throw std::runtime_error("RUNTIME ERROR: NEXT variable mismatch: expected " + fi.varName);
-    }
+  // Check that top of stack matches
+  ForInfo fi = program.forStack.back();
+  if (fi.varName != var) {
+    throw std::runtime_error(
+        "RUNTIME ERROR: NEXT variable mismatch: expected " + fi.varName);
+  }
 
-    // Update loop variable
-    VarInfo &v = program.numericVariables[var];
-    double val = v.numericValue + fi.step;
-    v.numericValue = val;
+  // Update loop variable
+  VarInfo &v = program.numericVariables[var];
+  double val = v.numericValue + fi.step;
+  v.numericValue = val;
 
-    // Check loop termination
-    bool done = (fi.step > 0.0 ? val > fi.endValue : val < fi.endValue);
-    if (done) {
-        // Pop loop and continue
-        program.forStack.pop_back();
-    } else {
-        // Repeat: jump back to just after the FOR line
-        program.nextLineNumber = fi.forLine;
-        program.nextLineNumberSet = true;
-    }
+  // Check loop termination
+  bool done = (fi.step > 0.0 ? val > fi.endValue : val < fi.endValue);
+  if (done) {
+    // Pop loop and continue
+    program.forStack.pop_back();
+  } else {
+    // Repeat: jump back to just after the FOR line
+    program.nextLineNumber = fi.forLine;
+    program.nextLineNumberSet = true;
+  }
 }
 
 // ========================= Dispatcher =========================
@@ -783,7 +1037,7 @@ void runInterpreter(PROGRAM_STRUCTURE &program) {
         executeON(code);
         break;
       case ST_MAT:
-        executeMAT(code);
+        executeMATops(code);
         break;
       case ST_FORMAT:
         executeFORMAT(code);
@@ -797,16 +1051,7 @@ void runInterpreter(PROGRAM_STRUCTURE &program) {
       case ST_CLOSE:
         executeCLOSE(code);
         break;
- /*
-                 case ST_PRINTFILE:
-                executePRINTexpr(code);
-                break;
-                * 
-      case ST_INPUTFILE:
-        executeINPUTops(code);
-        break;
-*/
-     case ST_WHILE:
+      case ST_WHILE:
         executeWHILE(code);
         break;
       case ST_WEND:

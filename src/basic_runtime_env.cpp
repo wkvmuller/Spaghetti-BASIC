@@ -3,18 +3,17 @@
 #include "renumber.h"
 #include "syntax.h"
 
-
 #include "program_structure.h"
 
 extern void handleRENUMBER(int newStart, int delta, int oldStart);
 extern void executeOPEN(const std::string &line);
-extern void runInterpreter(PROGRAM_STRUCTURE &program); 
+extern void runInterpreter(PROGRAM_STRUCTURE &program);
 extern void BASIC_Program_load(PROGRAM_STRUCTURE &program);
 
 extern PROGRAM_STRUCTURE program;
 // PROGRAM_STRUCTURE program;
 // List lines between start and end
-void list(int start, int end=INT_MAX) {
+void list(int start, int end = INT_MAX) {
   for (std::map<int, std::string>::const_iterator it =
            program.programSource.begin();
        it != program.programSource.end(); ++it) {
@@ -24,7 +23,6 @@ void list(int start, int end=INT_MAX) {
     }
   }
 }
-
 
 void interactiveLoop() {
   std::string input;
