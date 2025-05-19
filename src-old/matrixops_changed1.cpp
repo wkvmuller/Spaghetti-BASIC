@@ -17,12 +17,6 @@ void         matLU(const MatrixValue &A, MatrixValue &L, MatrixValue &U);
 
 extern PROGRAM_STRUCTURE program;
 
-struct pair_hash {
-    std::size_t operator()(const std::pair<int, int>& p) const {
-        return std::hash<int>()(p.first) ^ (std::hash<int>()(p.second) << 1);
-    }
-};
-
 // --- Local Matrix Access Helpers ---
 static double getVal(const MatrixValue &M, size_t idx) {
     if (!M.isSparse) return M.denseValues[idx].numericValue;
@@ -387,84 +381,6 @@ int matRank(const MatrixValue &A) {
     }
     return rank;
 }
-
-
-// TRACE = 11, TRANSPOSE = 12
-Matrix executeMATOperation(int opcode, const Matrix &A, const Matrix &B, double scalar = 0.0, int intArg = 0) {
-    switch (opcode) {
-        // ... existing 1–10
-        case 11: { // TRACE
-            double trace = 0.0;
-            size_t n = B.size();
-            for (size_t i = 0; i < n; ++i)
-                trace += (i < B[i].size()) ? B[i][i] : 0.0;
-            return Matrix{{trace}};
-        }
-        case 12: { // TRANSPOSE
-            size_t rows = B.size();
-            size_t cols = (rows > 0) ? B[0].size() : 0;
-            Matrix T(cols, std::vector<double>(rows));
-            for (size_t i = 0; i < rows; ++i)
-                for (size_t j = 0; j < cols; ++j)
-                    T[j][i] = B[i][j];
-            return T;
-        }
-        case 13: { // ONES
-    Matrix M(intArg, std::vector<double>(static_cast<size_t>(scalar), 1.0));
-    return M;
-}
-case 14: { // ZEROS
-    Matrix M(intArg, std::vector<double>(static_cast<size_t>(scalar), 0.0));
-    return M;
-}
-case 15: { // INVERSE
-    size_t n = B.size();
-    if (n == 0 || B[0].size() != n)
-        throw std::runtime_error("INVERSE requires a non-empty square matrix");
-
-    Matrix A = B; // Copy of original
-    Matrix I(n, std::vector<double>(n, 0.0));
-    for (size_t i = 0; i < n; ++i)
-        I[i][i] = 1.0;
-
-    // Gauss-Jordan elimination
-    for (size_t i = 0; i < n; ++i) {
-        // Find pivot
-        size_t pivot = i;
-        for (size_t j = i + 1; j < n; ++j)
-            if (std::abs(A[j][i]) > std::abs(A[pivot][i])) pivot = j;
-        if (A[pivot][i] == 0.0)
-            throw std::runtime_error("Matrix is singular, cannot invert");
-
-        std::swap(A[i], A[pivot]);
-        std::swap(I[i], I[pivot]);
-
-        double divisor = A[i][i];
-        for (size_t j = 0; j < n; ++j) {
-            A[i][j] /= divisor;
-            I[i][j] /= divisor;
-        }
-
-        for (size_t k = 0; k < n; ++k) {
-            if (k == i) continue;
-            double factor = A[k][i];
-            for (size_t j = 0; j < n; ++j) {
-                A[k][j] -= factor * A[i][j];
-                I[k][j] -= factor * I[i][j];
-            }
-        }
-    }
-
-    return I;
-}
-
-        default:
-            throw std::runtime_error("Unknown MAT opcode");
-    }
-}
-
-
-
 void executeMAT(const std::string &line) {
     static const std::regex elemRe(
         R"(^\s*MAT\s+([A-Z][A-Z0-9_]*)\s*=\s*([A-Z0-9_.]+)\s*([-+*/])\s*([A-Z0-9_.]+)\s*$)",
@@ -498,26 +414,6 @@ void executeMAT(const std::string &line) {
         R"(^\s*MAT\s+([A-Z][A-Z0-9_]*)\s*=\s*IDENTITY\s*\(\s*([0-9]+)\s*\)\s*$)",
         std::regex::icase
     );
-    static const std::regex traceRe(
-        R"(^\s*MAT\s+([A-Z][A-Z0-9_]*)\s*=\s*TRACE\s*\(\s*([A-Z][A-Z0-9_]*)\s*\)\s*$)",
-        std::regex::icase
-    );
-    static const std::regex transRe(
-        R"(^\s*MAT\s+([A-Z][A-Z0-9_]*)\s*=\s*TRANSPOSE\s*\(\s*([A-Z][A-Z0-9_]*)\s*\)\s*$)",
-        std::regex::icase
-    );
-    static const std::regex onesRe(
-        R"(^\s*MAT\s+([A-Z][A-Z0-9_]*)\s*=\s*ONES\s*\(\s*([0-9]+)\s*,\s*([0-9]+)\s*\)\s*$)",
-        std::regex::icase
-    );
-    static const std::regex zerosRe(
-        R"(^\s*MAT\s+([A-Z][A-Z0-9_]*)\s*=\s*ZEROS\s*\(\s*([0-9]+)\s*,\s*([0-9]+)\s*\)\s*$)",
-        std::regex::icase
-    );
-    static const std::regex invRe(
-        R"(^\s*MAT\s+([A-Z][A-Z0-9_]*)\s*=\s*INVERSE\s*\(\s*([A-Z][A-Z0-9_]*)\s*\)\s*$)",
-        std::regex::icase
-    );
 
     std::smatch m;
     if (std::regex_match(line, m, elemRe)) {
@@ -537,7 +433,8 @@ void executeMAT(const std::string &line) {
         } else {
             program.numericMatrices[X] = executeMATOperation(3,
                 program.numericMatrices[A],
-                program.numericMatrices[B]);
+                program.numericMatrices[B],
+                0.0);
         }
     }
     else if (std::regex_match(line, m, detRe)) {
@@ -574,43 +471,7 @@ void executeMAT(const std::string &line) {
         int size = std::stoi(m[2]);
         program.numericMatrices[m[1]] = executeMATOperation(10, {}, {}, 0.0, size);
     }
-    else if (std::regex_match(line, m, traceRe)) {
-        VarInfo v;
-        v.numericValue = executeMATOperation(11, {}, program.numericMatrices[m[2]])[0][0];
-        v.isString = false;
-        program.numericVariables[m[1]] = v;
-    }
-    else if (std::regex_match(line, m, transRe)) {
-        program.numericMatrices[m[1]] = executeMATOperation(12, {}, program.numericMatrices[m[2]]);
-    }
-    else if (std::regex_match(line, m, onesRe)) {
-        int rows = std::stoi(m[2]);
-        int cols = std::stoi(m[3]);
-        if (rows >= 4 || cols >= 4 || rows * cols >= 10000) {
-            SparseMatrix sm;
-            for (int i = 0; i < rows; ++i)
-                for (int j = 0; j < cols; ++j)
-                    sm[{i, j}] = 1.0;
-            program.sparseMatrices[m[1]] = sm;
-        } else {
-            program.numericMatrices[m[1]] = executeMATOperation(13, {}, {}, static_cast<double>(cols), rows);
-        }
-    }
-    else if (std::regex_match(line, m, zerosRe)) {
-        int rows = std::stoi(m[2]);
-        int cols = std::stoi(m[3]);
-        if (rows >= 4 || cols >= 4 || rows * cols >= 10000) {
-            SparseMatrix sm;  // empty = all zero
-            program.sparseMatrices[m[1]] = sm;
-        } else {
-            program.numericMatrices[m[1]] = executeMATOperation(14, {}, {}, static_cast<double>(cols), rows);
-        }
-    }
-    else if (std::regex_match(line, m, invRe)) {
-        program.numericMatrices[m[1]] = executeMATOperation(15, {}, program.numericMatrices[m[2]]);
-    }
     else {
         throw std::runtime_error("SYNTAX ERROR: Invalid MAT statement: " + line);
     }
 }
-

@@ -14,14 +14,16 @@ include_directories(
 # Source files
 set(SOURCES
     src/basic_runtime_env.cpp
+    src/evalExpression.cpp
+    src/evalStringExpression.cpp
     src/fileio.cpp
+    src/inlinefunctsupport.cpp
+    src/InputOutput.cpp
     src/interpreter.cpp
+    src/matrixops.cpp
+    src/program_structure.cpp
     src/renumber.cpp
     src/syntax.cpp
-    src/program_structure.cpp
-    src/InputOutput.cpp
-    src/inlinefunctsupport.cpp
-    src/matrixops2.cpp
 )
 
 # Define the executable

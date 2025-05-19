@@ -1,24 +1,13 @@
 #include "interpreter.h"
 #include "program_structure.h"
-/*
-#include <cctype>
-#include <cmath>
-#include <cstdlib>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <map>
-#include <regex>
-#include <sstream>
-#include <stack>
-#include <stdexcept>
-#include <string>
 #include <vector>
-*/
+
 
 extern PROGRAM_STRUCTURE program;
 
 extern int currentLine;
+
+//typedef std::vector<std::vector<double>> Matrix;
 //
 //--------------------------------------------------------------------------------
 //            Global Variables, structs, etc & helper functions.
@@ -46,6 +35,42 @@ void executePRINTUSING(const std::string &line, std::ostream &out);
 
 // ========================= Expression Evaluator =========================
 //
+void printMatrix(const std::string &name, int rows, int cols,
+                 const Matrix* dense, const SparseMatrix* sparse) {
+    std::cout << name << " =\n";
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            double value = 0.0;
+            if (dense) {
+                if (i < dense->size() && j < (*dense)[i].size())
+                    value = (*dense)[i][j];
+            } else if (sparse) {
+                auto it = sparse->find({i, j});
+                if (it != sparse->end()) value = it->second;
+            }
+            std::cout << value << " ";
+        }
+        std::cout << "\n";
+    }
+}
+
+void printMatrix(const std::string& name, const MatrixValue& mat) {
+    if (mat.dimensions.size() != 2)
+        throw std::runtime_error("PRINT only supports 2D matrices");
+
+    int rows = mat.dimensions[0];
+    int cols = mat.dimensions[1];
+
+    std::cout << name << " =\n";
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            VarInfo v = mat.get({i, j});
+            std::cout << v.numericValue << " ";
+        }
+        std::cout << "\n";
+    }
+}
+
 /**
  * File-based MAT PRINT:
  *   MAT PRINT #<chan>, <matrixList>
@@ -493,6 +518,7 @@ void executeINPUTops(const std::string &line) {
   static const std::regex fileReInput(
       R"(^\\s*INPUT\\s*#\\s*(\\d+)\\s*,\\s*(.+)$)", std::regex::icase);
   static const std::regex varRe(R"(^\\s*INPUT\\s+(.+)$)", std::regex::icase);
+static const std::regex inputRe(R"(^INPUT\s+([A-Z][A-Z0-9_]*)\((\d+),\s*(\d+)\)$)", std::regex::icase);
 
   std::smatch m;
   if (std::regex_match(line, m, promptRe)) {
@@ -508,7 +534,20 @@ void executeINPUTops(const std::string &line) {
     processInputList(m[2].str(), *it->second.stream);
   } else if (std::regex_match(line, m, varRe)) {
     processInputList(m[1].str(), std::cin);
-  } else {
+  } else 
+  if (std::regex_match(line, m, inputRe)) {
+    std::string name = m[1];
+    int i = std::stoi(m[2]);
+    int j = std::stoi(m[3]);
+
+    std::cout << "?" << name << "(" << i << "," << j << ") = ";
+    std::string response;
+    std::getline(std::cin, response);
+
+    double val = std::stod(response);
+    VarInfo v = { val, false };
+    program.matrices[name].set({i, j}, v);
+}else {
     throw std::runtime_error("SYNTAX ERROR: Invalid INPUT statement: " + line);
   }
 }

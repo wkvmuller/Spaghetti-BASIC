@@ -4,6 +4,7 @@
 
 #include <vector>
 
+/*
 struct Matrix {
     int rows, cols;
     std::vector<std::vector<double>> data;
@@ -12,6 +13,7 @@ struct Matrix {
     double& operator()(int r, int c);
     double operator()(int r, int c) const;
 };
+*/
 
 Matrix scalarOp(const Matrix &m, double scalar, char op);
 Matrix elementWiseOp(const Matrix &a, const Matrix &b, char op);

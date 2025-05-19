@@ -8,7 +8,8 @@
 extern PROGRAM_STRUCTURE program;
 
 // Helper to trim whitespace
-static std::string trim(const std::string &s) {
+/*
+ * static std::string trim(const std::string &s) {
   const char *WS = " \t\r\n";
   size_t start = s.find_first_not_of(WS);
   if (start == std::string::npos)
@@ -16,6 +17,7 @@ static std::string trim(const std::string &s) {
   size_t end = s.find_last_not_of(WS);
   return s.substr(start, end - start + 1);
 }
+*/
 
 // Forward-declare numeric eval for embedded numeric args
 double evalExpression(const std::string &expr);
