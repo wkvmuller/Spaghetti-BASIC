@@ -29,16 +29,6 @@ void executeMATops(const std::string &line);
 // void executeMATPRINT(const std::string &line);
 // void executeMATPRINTFILE(const std::string &line);
 // void executeMATREAD(const std::string &line);
-// Enforce matrix declaration for READ targets
-std::smatch rm;
-static const std::regex readRe(R"(READ\s+([A-Z][A-Z0-9_]*)(?:\((\d+),(\d+)\))?)", std::regex::icase);
-/*
- * if (std::regex_match(line, rm, readRe)) {
-    std::string name = rm[1];
-    if (!program.matrices.count(name))
-        throw std::runtime_error("UNDECLARED MATRIX: " + name + " must be defined using DIM before use");
-}
-*/
 // void executeON(const std::string &line);
 // void executeOPEN(const std::string &line);
 // void executeREM(const std::string &);
@@ -148,8 +138,6 @@ void executeREAD(const std::string &line) {
 
 // —————————————————————————————————————————————————————————
 // RESTORE statement: resets DATA pointer
-// Enforce RESTORE only resets pointer, check related matrices during READ
-// If you track named DATA segments in future, validate them here
 // —————————————————————————————————————————————————————————
 void executeRESTORE(const std::string & /*line*/) { program.dataPointer = 0; }
 
@@ -426,16 +414,6 @@ void dispatchStatement(const std::string &stmt) {
   //        executeUNTIL(stmt);
   //    }
   else if (kw == "MAT") {
-// Enforce matrix declaration for MAT operations
-std::smatch m;
-std::regex matNameRe(R"([A-Z][A-Z0-9_]*)", std::regex::icase);
-std::sregex_iterator it(line.begin(), line.end(), matNameRe), end;
-while (it != end) {
-    std::string mat = (*it)[0];
-    if (!program.matrices.count(mat))
-        throw std::runtime_error("UNDECLARED MATRIX: " + mat + " must be defined using DIM before use");
-    ++it;
-}
     executeMATops(stmt);
   } else if (kw == "SEED") {
     executeSEED(stmt);
@@ -583,14 +561,6 @@ void executeMATREAD(const std::string &line) {
  *   MAT <id> = <matexpr>             → executeMAT
  *   MAT READ <id>                     → executeMATREAD
  *   MAT PRINT #<chan>, <id1>,<id2>    → executeMATPRINTFILE
-// Enforce matrix declaration for MAT PRINT # statements
-std::smatch pm;
-static const std::regex matPrintRe(R"(MAT\s+PRINT\s+#\d+\s*,\s*([A-Z][A-Z0-9_]*))", std::regex::icase);
-if (std::regex_match(line, pm, matPrintRe)) {
-    std::string mat = pm[1];
-    if (!program.matrices.count(mat))
-        throw std::runtime_error("UNDECLARED MATRIX: " + mat + " must be defined using DIM before use");
-}
  *   MAT PRINT <id1>,<id2>,…           → executeMATPRINT
  */
 void executeMATops(const std::string &line) {

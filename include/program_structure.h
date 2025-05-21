@@ -62,6 +62,7 @@ ArgsInfo makeArgsInfo(long long line, std::string idname,
   return tmp;
 }
 */
+
 struct VarInfo {
   double numericValue = 0.0;
   std::string stringValue;
@@ -69,12 +70,17 @@ struct VarInfo {
   bool isArray = false;
 };
 
+
+typedef std::pair<int, int> MatrixIndex;
+
+/*
 struct MatrixIndex {
   std::vector<int> dimensions;
   bool operator<(const MatrixIndex &other) const {
     return dimensions < other.dimensions;
   }
 };
+*/
 
 struct Matrix {
     int rows, cols;
@@ -116,7 +122,11 @@ struct MatrixValue {
   VarInfo get(const MatrixIndex& idx) const {
     if (isSparse) {
       auto it = sparseValues.find(idx);
-      return it != sparseValues.end() ? it->second : VarInfo{0.0, false};
+      if (it != sparseValues.end()) return it->second;
+      VarInfo fallback;
+      fallback.numericValue = 0.0;
+      fallback.isString = false;
+      return fallback;
     } else {
       size_t flat = flattenIndex(idx);
       if (flat >= denseValues.size()) throw std::out_of_range("Index out of bounds");

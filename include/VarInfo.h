@@ -7,6 +7,6 @@ struct VarInfo {
   bool isString = false;
 
   VarInfo() = default;
-  VarInfo(double val, bool isStr = false) : numericValue(val), isString(isStr) {}
   VarInfo(const std::string& str) : stringValue(str), isString(true) {}
+  VarInfo(double val) : numericValue(val), isString(false) {}
 };
