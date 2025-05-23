@@ -29,6 +29,7 @@
 #include <unordered_map>
 #include <utility>
 
+
 const size_t DENSE_MATRIX_THRESHOLD = 10000;
 
 static constexpr double PI = 3.141592653589793238462643383279502884;
@@ -62,14 +63,28 @@ ArgsInfo makeArgsInfo(long long line, std::string idname,
   return tmp;
 }
 */
-
+/*
 struct VarInfo {
   double numericValue = 0.0;
   std::string stringValue;
   bool isString = false;
   bool isArray = false;
 };
+*/
 
+enum VarType { SCALAR, ARRAY, MATRIX };
+
+struct VarInfo {
+  double numericValue = 0.0;
+  std::string stringValue;
+  bool isString = false;
+    bool isArray = false;
+  VarType type = SCALAR;
+
+  VarInfo() = default;
+  VarInfo(const std::string& str) : stringValue(str), isString(true) {}
+  VarInfo(double val) : numericValue(val), isString(false) {}
+};
 
 typedef std::pair<int, int> MatrixIndex;
 

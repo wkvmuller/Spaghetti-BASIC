@@ -2,9 +2,10 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include "VarInfo.h"
+
 
 typedef std::pair<int, int> MatrixIndex;
+
 constexpr size_t DENSE_MATRIX_THRESHOLD = 10000;
 
 struct MatrixValue {

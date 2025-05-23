@@ -114,7 +114,8 @@ void executeMATPRINTFILE(const std::string &line) {
  * Prints each matrix as nested braces, e.g. {{1,2},{3,4}} for 2×2.
  * Higher-D matrices nest accordingly.
  */
-void executeMATPRINT(const std::string &line, std::ostream &out = std::cout) {
+/*
+ * void executeMATPRINT(const std::string &line, std::ostream &out = std::cout) {
   static const std::regex rgx(R"(^\s*MAT\s+PRINT\s+(.+)$)", std::regex::icase);
   std::smatch m;
   if (!std::regex_match(line, m, rgx)) {
@@ -236,6 +237,56 @@ void executeMATPRINT(const std::string &line, std::ostream &out = std::cout) {
   }
 
   out << std::endl;
+}
+*/
+/*
+void executeMATPRINT(const std::string &line, std::ostream &out) {
+    static const std::regex matPrintRe(R"(MAT\\s+PRINT\\s+#(\\d+)\\s*,\\s*([A-Z][A-Z0-9_]*)\\s*)", std::regex::icase);
+    std::smatch m;
+    if (std::regex_match(line, m, matPrintRe)) {
+        std::string name = m[2];
+        if (!program.matrices.count(name))
+            throw std::runtime_error("UNDECLARED MATRIX: " + name + " must be defined using DIM before use");
+
+        MatrixValue &mat = program.matrices[name];
+        int rows = mat.dimensions[0];
+        int cols = mat.dimensions[1];
+
+        for (int i = 0; i < rows; ++i) {
+            for (int j = 0; j < cols; ++j) {
+                VarInfo v = mat.get({i, j});
+                out << v.numericValue << " ";
+            }
+            out << "\\n";
+        }
+    } else {
+        throw std::runtime_error("Invalid MAT PRINT statement: " + line);
+    }
+}
+*/
+
+void executeMATPRINT(const std::string &line, std::ostream &out) {
+    static const std::regex matPrintRe(R"(MAT\\s+PRINT\\s+#(\\d+)\\s*,\\s*([A-Z][A-Z0-9_]*)\\s*)", std::regex::icase);
+    std::smatch m;
+    if (std::regex_match(line, m, matPrintRe)) {
+        std::string name = m[2];
+        if (!program.matrices.count(name))
+            throw std::runtime_error("UNDECLARED MATRIX: " + name + " must be defined using DIM before use");
+
+        MatrixValue &mat = program.matrices[name];
+        int rows = mat.dimensions[0];
+        int cols = mat.dimensions[1];
+
+        for (int i = 0; i < rows; ++i) {
+            for (int j = 0; j < cols; ++j) {
+                VarInfo v = mat.get({i, j});
+                out << v.numericValue << " ";
+            }
+            out << "\\n";
+        }
+    } else {
+        throw std::runtime_error("Invalid MAT PRINT statement: " + line);
+    }
 }
 
 // Simple file‐PRINT (no USING)
@@ -489,7 +540,7 @@ static void processInputList(const std::string &vars, std::istream &in) {
     bool isString = (!v.empty() && v.back() == '$');
     std::string name = isString ? v.substr(0, v.size() - 1) : v;
     VarInfo info;
-    info.isArray = false;
+    // removed: info.isArray not defined in VarInfo
     if (isString) {
       info.isString = true;
       if (!std::getline(in, info.stringValue))
@@ -628,4 +679,56 @@ void executePRINTexpr(const std::string &line) {
 
   // if (args.empty())
   //    throw std::runtime_error("RUNTIME ERROR: No arguments for PRINT USING");
+}
+
+/*
+void executeINPUT(const std::string &line) {
+    static const std::regex inputRe(R"(INPUT\\s+([A-Z][A-Z0-9_]*)\\((\\d+),(\\d+)\\))", std::regex::icase);
+    std::smatch m;
+    if (std::regex_match(line, m, inputRe)) {
+        std::string name = m[1];
+        int i = std::stoi(m[2]);
+        int j = std::stoi(m[3]);
+
+        if (!program.matrices.count(name))
+            throw std::runtime_error("UNDECLARED MATRIX: " + name + " must be defined using DIM before use");
+
+        std::cout << "?" << name << "(" << i << "," << j << ") = ";
+        std::string response;
+        std::getline(std::cin, response);
+        double val = std::stod(response);
+
+        VarInfo v;
+        v.numericValue = val;
+        v.isString = false;
+        program.matrices[name].set({i, j}, v);
+    } else {
+        throw std::runtime_error("Invalid INPUT statement: " + line);
+    }
+}
+*/
+
+void executeINPUT(const std::string &line) {
+    static const std::regex inputRe(R"(INPUT\\s+([A-Z][A-Z0-9_]*)\\((\\d+),(\\d+)\\))", std::regex::icase);
+    std::smatch m;
+    if (std::regex_match(line, m, inputRe)) {
+        std::string name = m[1];
+        int i = std::stoi(m[2]);
+        int j = std::stoi(m[3]);
+
+        if (!program.matrices.count(name))
+            throw std::runtime_error("UNDECLARED MATRIX: " + name + " must be defined using DIM before use");
+
+        std::cout << "?" << name << "(" << i << "," << j << ") = ";
+        std::string response;
+        std::getline(std::cin, response);
+        double val = std::stod(response);
+
+        VarInfo v;
+        v.numericValue = val;
+        v.isString = false;
+        program.matrices[name].set({i, j}, v);
+    } else {
+        throw std::runtime_error("Invalid INPUT statement: " + line);
+    }
 }
