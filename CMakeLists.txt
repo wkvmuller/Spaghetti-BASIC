@@ -4,7 +4,7 @@ project(SpaghettiBASIC LANGUAGES CXX)
 # Use C++11 standard
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic ")
 
 # Include directories
 include_directories(
@@ -17,11 +17,13 @@ set(SOURCES
     src/evalExpression.cpp
     src/evalStringExpression.cpp
     src/fileio.cpp
+    src/FOR_NEXT_WHILE_WEND_REPETE_UNTILL.cpp
     src/inlinefunctsupport.cpp
     src/InputOutput.cpp
-    src/interpreter.cpp
+    src/interpeter.cpp
     src/matrixops.cpp
     src/program_structure.cpp
+    src/READ_DATA_RESTORE.cpp
     src/renumber.cpp
     src/syntax.cpp
 )

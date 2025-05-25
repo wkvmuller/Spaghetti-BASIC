@@ -182,3 +182,35 @@ std::string evaluateStringFunction(const std::string &name,
   std::string token = ss.str();
   throw std::runtime_error(token);
 }
+
+
+
+
+// BEEP statement — emit a bell character
+void executeBEEP(const std::string & /*line*/) {
+  std::cout << '\a' << std::flush;
+}
+
+// DEF FN<name>(<param>) = <expression>
+void executeDEF(const std::string &line) {
+  static const std::regex rgx(
+      R"(^\s*DEF\s+FN([A-Z][A-Z0-9_]{0,31})\s*\(\s*([A-Z][A-Z0-9_]{0,31})\s*\)\s*=\s*(.+)$)",
+      std::regex::icase);
+  std::smatch m;
+  if (!std::regex_match(line, m, rgx)) {
+    throw std::runtime_error("SYNTAX ERROR: Invalid DEF: " + line);
+  }
+
+  std::string name = m[1].str();  // function name
+  std::string param = m[2].str(); // single parameter
+  std::string expr = m[3].str();  // body expression
+
+  // Store or overwrite
+  program.userFunctions[name] = UserFunction{param, expr};
+}
+
+void executeEND(const std::string &line) {
+  throw std::runtime_error("RUNTIME ERROR: END of program");
+}
+
+// Assumes you have a helper to eval an arithmetic expression to an int:

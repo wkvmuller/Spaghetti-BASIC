@@ -1,0 +1,24 @@
+10 REM --- DIM matrices for LU test ---
+20 DIM A(3,3), B(3,3)
+30 READ A(0,0), A(0,1), A(0,2)
+40 READ A(1,0), A(1,1), A(1,2)
+50 READ A(2,0), A(2,1), A(2,2)
+
+60 REM --- LU DECOMPOSITION ---
+70 MAT LU B = A
+80 MAT PRINT #1, B_L
+90 MAT PRINT #1, B_U
+
+100 REM --- CHECK THAT L*U = A ---
+110 MAT MULT X = B_L * B_U
+120 MAT PRINT #1, X
+
+130 REM --- COMPARE X to A for accuracy ---
+140 MAT E = A - X
+150 MAT PRINT #1, E
+
+160 END
+
+1000 DATA 2, 1, 1
+1010 DATA 4, -6, 0
+1020 DATA -2, 7, 2

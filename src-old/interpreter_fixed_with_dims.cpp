@@ -654,6 +654,8 @@ void executeMATREAD(const std::string &line) {
     total *= static_cast<size_t>(mv.dimensions[i]);
   }
   // Configure dense vs sparse storage
+  int rows = 1; // TODO: Replace with real row count
+  int cols = 1; // TODO: Replace with real column count
   mv.configureStorage({rows, cols});
 
   // Fill matrix from DATA values

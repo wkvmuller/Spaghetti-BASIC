@@ -88,6 +88,21 @@ struct VarInfo {
 
 typedef std::pair<int, int> MatrixIndex;
 
+/*enum VariableType {
+  VT_UNKNOWN,
+  VT_TEXT,
+  VT_INT,
+  VT_DOUBLE,
+  VT_STRING,
+  VT_CONSTANT
+};
+
+struct IdentifierReturn {
+  bool isstring;
+  std::string s;
+  double d;
+};
+
 /*
 struct MatrixIndex {
   std::vector<int> dimensions;

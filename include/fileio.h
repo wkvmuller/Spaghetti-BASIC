@@ -1,7 +1,7 @@
 #ifndef FILEIO_H
 #define FILEIO_H
 
-#include "program_structure_v3.h"
+#include "program_structure.h"
 
 // Loads a BASIC program from program.filename
 void load(PROGRAM_STRUCTURE &program);

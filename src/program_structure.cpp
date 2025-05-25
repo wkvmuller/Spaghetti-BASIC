@@ -365,3 +365,97 @@ double evalExpression(const std::string &expr) {
     throw std::runtime_error("Unexpected trailing text: " + expr.substr(pos));
   return result;
 }
+
+
+// Evaluates expr and returns its integer value.
+// Supports +, -, *, / and parentheses. Throws on syntax error.
+int evalIntExpr(const std::string &expr) {
+  size_t pos = 0;
+
+  // Skip whitespace
+  auto skipWS = [&]() {
+    while (pos < expr.size() && isspace(expr[pos]))
+      ++pos;
+  };
+
+  // Forward declarations
+  std::function<long()> parseExpr, parseTerm, parseFactor;
+
+  // <expression> ::= <term> { (+|-) <term> }
+  parseExpr = [&]() -> long {
+    long value = parseTerm();
+    skipWS();
+    while (pos < expr.size()) {
+      if (expr[pos] == '+') {
+        ++pos;
+        skipWS();
+        value += parseTerm();
+      } else if (expr[pos] == '-') {
+        ++pos;
+        skipWS();
+        value -= parseTerm();
+      } else
+        break;
+      skipWS();
+    }
+    return value;
+  };
+
+  // <term> ::= <factor> { (*|/) <factor> }
+  parseTerm = [&]() -> long {
+    long value = parseFactor();
+    skipWS();
+    while (pos < expr.size()) {
+      if (expr[pos] == '*') {
+        ++pos;
+        skipWS();
+        value *= parseFactor();
+      } else if (expr[pos] == '/') {
+        ++pos;
+        skipWS();
+        long rhs = parseFactor();
+        if (rhs == 0)
+          throw std::runtime_error("Division by zero");
+        value /= rhs;
+      } else
+        break;
+      skipWS();
+    }
+    return value;
+  };
+
+  // <factor> ::= [-] ( number | '(' <expression> ')' )
+  parseFactor = [&]() -> long {
+    skipWS();
+    bool neg = false;
+    if (pos < expr.size() && expr[pos] == '-') {
+      neg = true;
+      ++pos;
+      skipWS();
+    }
+    long value = 0;
+    if (pos < expr.size() && expr[pos] == '(') {
+      ++pos; // consume '('
+      value = parseExpr();
+      skipWS();
+      if (pos >= expr.size() || expr[pos] != ')')
+        throw std::runtime_error("Missing closing parenthesis");
+      ++pos;
+    } else if (pos < expr.size() && isdigit(expr[pos])) {
+      while (pos < expr.size() && isdigit(expr[pos])) {
+        value = value * 10 + (expr[pos++] - '0');
+      }
+    } else {
+      throw std::runtime_error("Invalid factor in expression");
+    }
+    return neg ? -value : value;
+  };
+
+  // Parse and ensure we've consumed everything
+  long result = parseExpr();
+  skipWS();
+  if (pos != expr.size())
+    throw std::runtime_error("Unexpected characters in expression");
+  return static_cast<int>(result);
+}
+

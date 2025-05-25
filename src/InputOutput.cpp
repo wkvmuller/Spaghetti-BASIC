@@ -1,6 +1,6 @@
-#include "interpreter.h"
+//#include "interpreter.h"
 #include "program_structure.h"
-#include <vector>
+//#include <vector>
 
 
 extern PROGRAM_STRUCTURE program;
@@ -17,7 +17,7 @@ extern int currentLine;
 //--------------------------------------------------------------------------------
 //             prototypes
 //
-
+/*
 extern double evalExpression(const std::string &expr);
 void executeCLOSE(const std::string &line);
 void executeFORMAT(const std::string &);
@@ -30,8 +30,10 @@ void executePRINTFILE(const std::string &line);
 void executePRINTFILEUSING(const std::string &line);
 extern double evalExpression(const std::string &expr);
 extern std::string trim(const std::string &s);
-void executeMATPRINT(const std::string &line, std::ostream &out);
+* */
 void executePRINTUSING(const std::string &line, std::ostream &out);
+void executeMATPRINT(const std::string &line, std::ostream &out) ;
+void executePRINT(const std::string &line, std::ostream &out);
 
 // ========================= Expression Evaluator =========================
 //
