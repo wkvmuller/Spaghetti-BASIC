@@ -1,0 +1,28 @@
+--- src/matrixops.cpp
++++ src/matrixops.cpp
+@@
+-extern static std::map<int, std::string>::const_iterator findLine(int ln);
++static std::map<int, std::string>::const_iterator findLine(int ln);
+@@
+-MatrixValue matScalarOp(const MatrixValue& A, double scalar, char op, bool scalarLeft = false) {
++MatrixValue matScalarOp(const MatrixValue& A, double scalar, char op, bool scalarLeft) {
+@@ void executeDIM(const std::string &line) {
+-    size_t totalElements = rows * cols;
+-    mat.configureStorage(totalElements);
++    std::vector<int> dims = { rows, cols };
++    mat.configureStorage(dims);
+@@ MatrixValue matElementWiseOp(const MatrixValue &A, const MatrixValue &B, char op) {
+-    R.configureStorage(total);
++    R.dimensions = A.dimensions;
++    R.configureStorage(R.dimensions);
+@@ for (size_t idx = 0; idx < total; ++idx) {
+-        double a = A.isSparse ? program.getMatrixValue(A, idx) : A.denseValues[idx].numericValue;
+-        double b = B.isSparse ? program.getMatrixValue(B, idx) : B.denseValues[idx].numericValue;
++        MatrixIndex mi = A.unflattenIndex(idx);
++        VarInfo va = A.get(mi);
++        VarInfo vb = B.get(mi);
++        double a = va.numericValue;
++        double b = vb.numericValue;
+@@ dispatch section
+-        program.matrices[X] = executeMATOperation(opcode, program.matrices[A], program.matrices[B]);
++        program.matrices[X] = executeMATOperation(line);

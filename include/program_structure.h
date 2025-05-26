@@ -164,6 +164,14 @@ struct MatrixValue {
     }
   }
 
+  // Convert a linear index back to (row, col) based on dimensions
+  MatrixIndex unflattenIndex(size_t idx) const {
+    int cols = dimensions[1];
+    return {
+      static_cast<int>(idx / cols),
+      static_cast<int>(idx % cols)
+    };
+  
   void set(const MatrixIndex& idx, const VarInfo& value) {
     if (isSparse) {
       if (value.numericValue != 0.0 || value.isString)
