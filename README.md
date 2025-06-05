@@ -1,3 +1,6 @@
+
+![ChatGPT Image Jun 5, 2025, 01_06_39 PM](https://github.com/user-attachments/assets/bd7fb296-c0b2-47af-87b6-145cea130da5)
+
 # BASIC Runtime Environment
 
 This project implements a runtime environment for an extended version of Dartmouth BASIC V6.0. It includes:
